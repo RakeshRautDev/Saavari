@@ -1,9 +1,10 @@
 import jwt from "jsonwebtoken";
 import { User } from "../models/user.model.js";
 import { BlacklistToken } from "../models/blacklistToken.model.js";
+import { captainModel } from "../models/captain.model.js";
 
 
-const authMiddleware = async (req, res, next) => {
+const authUser = async (req, res, next) => {
     try {
         console.log("Auth middleware called");
         console.log("Request:", req.method, req.originalUrl);
@@ -71,4 +72,88 @@ const authMiddleware = async (req, res, next) => {
     }
 };
 
-export default authMiddleware;
+const authCaptain = async (req, res, next) => {
+    try {
+        console.log("Auth middleware called");
+        console.log("Request:", req.method, req.originalUrl);
+
+        let token;
+
+        if (req.cookies?.token) {
+            console.log("Token found in cookies");
+            token = req.cookies.token;
+        }
+
+        else if (req.headers.authorization) {
+            console.log("Authorization header found");
+
+            const authHeader = req.headers.authorization;
+
+            if (!authHeader.startsWith("Bearer ")) {
+                return res.status(401).json({
+                    message: "Invalid authorization format"
+                });
+            }
+
+            token = authHeader.split(" ")[1];
+            console.log("Token extracted from Authorization header");
+        }
+
+        if (!token) {
+            return res.status(401).json({
+                message: "Unauthorized request"
+            });
+        }
+
+        const isBlacklisted = await BlacklistToken.findOne({ token });
+
+        if (isBlacklisted) {
+            return res.status(401).json({
+                message: "Unauthorized access"
+            });
+        }
+
+        const decodedToken = jwt.verify(
+            token,
+            process.env.JWT_SECRET
+        );
+
+        console.log("JWT verified");
+        console.log("Captain ID:", decodedToken._id);
+
+        const captain = await captainModel.findById(decodedToken._id);
+
+        if (!captain) {
+            return res.status(401).json({
+                message: "Captain not found"
+            });
+        }
+
+        req.captain = captain;
+
+        console.log("Authentication successful");
+
+        next();
+
+    } catch (error) {
+        console.log("Authentication error:", error.message);
+
+        if (error.name === "JsonWebTokenError") {
+            return res.status(401).json({
+                message: "Invalid token"
+            });
+        }
+
+        if (error.name === "TokenExpiredError") {
+            return res.status(401).json({
+                message: "Token expired"
+            });
+        }
+
+        next(error);
+    }
+};
+
+export default authCaptain;
+
+export {authUser,authCaptain};
