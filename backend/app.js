@@ -3,6 +3,7 @@ import express from "express"
 import cors from "cors"
 import connectDb from "./db/db.js";
 import userRoutes from "./routes/user.routes.js"
+import captainRoutes from "./routes/captain.routes.js"
 import cookieParser from "cookie-parser";
 
 const app=express();
@@ -22,12 +23,14 @@ app.get('/',(req,res)=>{
 })
 
 app.use('/users', userRoutes);
-
+app.use("/captains",captainRoutes)
 app.use((err, req, res, next) => {
     console.error("Global Error Handler:", err);
     res.status(err.status || 500).json({
         message: err.message || "Internal Server Error"
     });
 });
+
+
 
 export default app;
