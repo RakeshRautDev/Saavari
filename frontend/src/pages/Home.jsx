@@ -3,20 +3,41 @@ import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
 import 'remixicon/fonts/remixicon.css'
 import LocationSearchPanel from '../components/LocationSearchPanel'
-
+import ConfirmRide from '../components/ConfirmedRide'
+import VehiclePanel from '../components/VechiclePanel'
+import LookingForDriver from '../components/LookingForDriver'
+import WaitingForDriver from '../components/WaitingForDriver'
 const Home = () => {
 
   const [pickup, setPickup] = useState("")
   const [destination, setDestination] = useState("")
   const [pannelOpen, setPannelOpen] = useState(false)
+ const [vechiclePannel, setvechiclePannel] = useState(false)
+  const [confirmRidePanel, setConfirmRidePanel] = useState(false)
+  const [vehicleFound,setVehicleFound]=useState(false)
+const [waitingForDriver,setWaitingForDriver]=useState(false);
+
 
   const panelRef = useRef(null)
   const pannelCloseRef = useRef(null)
+  const vechiclePannelRef=useRef(null);
+  const confirmRidePanelRef=useRef(null);
+  const vehicleFoundRef=useRef(null);
+  const waitingForDriverRef=useRef(null);
+
+
+ 
+
+
+
   const submitHandler = (e) => {
     e.preventDefault()
 
     console.log(pickup, destination)
   }
+
+
+
 
   useGSAP(() => {
     if (pannelOpen) {
@@ -40,6 +61,64 @@ const Home = () => {
     }
   }, [pannelOpen])
 
+
+
+
+useGSAP(()=>{
+  if(confirmRidePanel){
+    gsap.to(confirmRidePanelRef.current,{
+      transform:"translateY(0)"
+    })
+  } 
+  else{
+     gsap.to(confirmRidePanelRef.current,{
+      transform:"translateY(100%)"
+    })
+  }
+},[confirmRidePanel])
+
+
+useGSAP(()=>{
+  if(vechiclePannel){
+    gsap.to(vechiclePannelRef.current,{
+      transform:"translateY(0)"
+    })
+  }
+  else{
+     gsap.to(vechiclePannelRef.current,{
+      transform:"translateY(100%)"
+    })
+  }
+},[vechiclePannel])
+
+
+useGSAP(()=>{
+  if(vehicleFound){
+    gsap.to(vehicleFoundRef.current,{
+      transform:"translateY(0)"
+    })
+  }
+  else{
+     gsap.to(vehicleFoundRef.current,{
+      transform:"translateY(100%)"
+    })
+  }
+},[vehicleFound])
+
+useGSAP(()=>{
+  if(waitingForDriver){
+    gsap.to(waitingForDriverRef.current,{
+      transform:"translateY(0)"
+    })
+  }
+  else{
+     gsap.to(waitingForDriverRef.current,{
+      transform:"translateY(100%)"
+    })
+  }
+},[vehicleFound])
+
+
   return (
     <div className='h-screen relative overflow-hidden'>
 
@@ -49,7 +128,8 @@ const Home = () => {
         alt="Uber"
       />
 
-      <div className='h-screen w-screen'>
+      <div  
+        className='h-screen w-screen'>
         <img
           className='h-full w-full object-cover'
           src="https://miro.medium.com/v2/resize:fit:1100/format:webp/0*gwMx05pqII5hbfmX.gif"
@@ -99,43 +179,33 @@ const Home = () => {
           ref={panelRef}
           className={`h-0 ${pannelOpen ? "p-5" : "p-0"}  bg-white overflow-hidden`}
         >
-          <LocationSearchPanel />
+          <LocationSearchPanel setPannelOpen={setPannelOpen} setvechiclePannel={setvechiclePannel} />
         </div>
 
       </div>
 
 
-      <div className='fixed w-full z-10 bottom-0 px-3 py-6 bg-white'>
-        <h3 className='text-2xl font-semibold mb-5'>Choose a Vechicle</h3>
-        <div className='flex w-full p-3 mb-2 items-center justify-between border-2 border-black rounded-xl'>
-          <img className="h-15" src="https://d1a3f4spazzrp4.cloudfront.net/car-types/haloProductImages/v1.1/UberX_v1.png" alt="" />
-          <div className='ml-2 w-1/2'>
-            <h4 className='font-medium text-base'>UberGo <span><i className="ri-user-3-fill"></i>3</span></h4>
-            <h5 className='font-medium text-sm'>3 mins away </h5>
-            <p className='font-normal text-xs text-gray-600'>Affordable Auto rides</p>
-          </div>
-          <h2 className='text-lg font-semibold'>₹193.20</h2>
-        </div>
-         <div className='flex w-full p-3 mb-2 items-center justify-between border-2 border-black rounded-xl'>
-          <img className="h-15" src="https://d1a3f4spazzrp4.cloudfront.net/car-types/haloProductImages/v1.1/UberX_v1.png" alt="" />
-          <div className='ml-2 w-1/2'>
-            <h4 className='font-medium text-base'>UberGo <span><i className="ri-user-3-fill"></i>3</span></h4>
-            <h5 className='font-medium text-sm'>3 mins away </h5>
-            <p className='font-normal text-xs text-gray-600'>Affordable Auto rides</p>
-          </div>
-          <h2 className='text-lg font-semibold'>₹193.20</h2>
-        </div>
-         <div className='flex w-full p-3 mb-2 items-center justify-between border-2 border-black rounded-xl'>
-          <img className="h-15" src="https://d1a3f4spazzrp4.cloudfront.net/car-types/haloProductImages/v1.1/UberX_v1.png" alt="" />
-          <div className='ml-2 w-1/2'>
-            <h4 className='font-medium text-base'>UberGo <span><i className="ri-user-3-fill"></i>3</span></h4>
-            <h5 className='font-medium text-sm'>3 mins away </h5>
-            <p className='font-normal text-xs text-gray-600'>Affordable Auto rides</p>
-          </div>
-          <h2 className='text-lg font-semibold'>₹193.20</h2>
-        </div>
+      <div ref={vechiclePannelRef} className="fixed w-full z-10 translate-y-full bottom-0 px-3 py-6 bg-white">
+            <VehiclePanel setConfirmRidePanel={setConfirmRidePanel} setvechiclePannel={setvechiclePannel}></VehiclePanel>
+      </div>
+
+      <div ref={confirmRidePanelRef} className='fixed w-full z-10 bottom-0 translate-y-full bg-white px-3 py-10 pt-14'>
         
+        <ConfirmRide setConfirmRidePanel={setConfirmRidePanel} setvechiclePannel={setvechiclePannel} setVehicleFound={setVehicleFound}
+         />
       </div>
+      <div ref={vehicleFoundRef} className='fixed w-full z-10 bottom-0 translate-y-full bg-white px-3 py-10 pt-14'>
+        
+        <LookingForDriver setConfirmRidePanel={setConfirmRidePanel} setvechiclePannel={setvechiclePannel} 
+         />
+      </div>
+      <div ref={waitingForDriverRef} className='fixed w-full z-10 bottom-0  bg-white px-3 py-10 pt-14'>
+        
+        <WaitingForDriver waitingForDriver={waitingForDriver}
+         />
+      </div>
+
+
     </div>
   )
 }
