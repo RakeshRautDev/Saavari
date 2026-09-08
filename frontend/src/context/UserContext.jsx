@@ -1,24 +1,53 @@
-import React from 'react'
-import { createContext,useState } from 'react'
+import React, { createContext, useEffect, useState } from 'react'
+import axios from 'axios'
 
+export const UserDataContext = createContext()
 
-export const UserDataContext=createContext();
+const UserContext = ({ children }) => {
 
+    const [user, setUser] = useState(null)
+    const [loading, setLoading] = useState(true)
 
-const UserContext = ({children}) => {
+    useEffect(() => {
 
-    const [user,setUser]=useState({
-      email:"",
-      fullName:{
-        firstName:"",
-        lastName:""
-      }
-    })
-  return (
-    <UserDataContext.Provider value={user}>
-    <div>{children}</div>
-    </UserDataContext.Provider>
-  )
+        const checkAuth = async () => {
+            try {
+
+                const response = await axios.get(
+                    `${import.meta.env.VITE_BASE_URL}/users/profile`,
+                    {
+                        withCredentials: true
+                    }
+                )
+
+                setUser(response.data.user)
+
+            } catch (error) {
+
+                setUser(null)
+
+            } finally {
+
+                setLoading(false)
+
+            }
+        }
+
+        checkAuth()
+
+    }, [])
+
+    return (
+        <UserDataContext.Provider
+            value={{
+                user,
+                setUser,
+                loading
+            }}
+        >
+            {children}
+        </UserDataContext.Provider>
+    )
 }
 
 export default UserContext

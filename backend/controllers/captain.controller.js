@@ -40,7 +40,7 @@ export const registerCaptain = async (req, res, next) => {
         });
 
         const token = captain.generateAuthToken();
-
+        res.cookie("captain-token",token)
         return res.status(201).json({
             message: "Captain registered successfully",
             captain: {
@@ -75,7 +75,7 @@ export const loginCaptain=async(req,res,next)=>{
     }
 
     const token=captain.generateAuthToken();
-    res.cookie("token",token)
+    res.cookie("captain-token",token)
     const captainObject=captain.toObject();
     delete captainObject.password;
     res.status(200).json({message:"Captain LoggedIn Successfully",captain:captainObject})
@@ -89,8 +89,8 @@ export const logoutCaptain = async (req, res, next) => {
     try {
         let token;
 
-        if (req.cookies?.token) {
-            token = req.cookies.token;
+        if (req.cookies?.['captain-token']) {
+            token = req.cookies['captain-token'];
         } else if (req.headers.authorization) {
             token = req.headers.authorization.split(" ")[1];
         }
@@ -103,7 +103,7 @@ export const logoutCaptain = async (req, res, next) => {
 
         await BlacklistToken.create({ token });
 
-        res.clearCookie("token");
+        res.clearCookie("captain-token");
 
         return res.status(200).json({
             message: "Captain logged out successfully"

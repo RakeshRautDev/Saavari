@@ -33,6 +33,8 @@ export const registerUser = async (req, res, next) => {
 
         const token = user.generateAuthToken();
 
+        res.cookie("user-token", token);
+
         return res.status(201).json({
             token,
             user
@@ -76,7 +78,7 @@ export const loginUser = async (req, res, next) => {
         const userObject = user.toObject();
         delete userObject.password;
 
-        return res.status(200).cookie("token",token).json({
+        return res.status(200).cookie("user-token",token).json({
             token,
             user: userObject
         });
@@ -96,8 +98,8 @@ export const logoutUser = async (req, res, next) => {
     try {
         let token;
 
-        if (req.cookies?.token) {
-            token = req.cookies.token;
+        if (req.cookies?.['user-token']) {
+            token = req.cookies['user-token'];
         } else if (req.headers.authorization) {
             token = req.headers.authorization.split(" ")[1];
         }
@@ -108,7 +110,7 @@ export const logoutUser = async (req, res, next) => {
             });
         }
 
-        res.clearCookie("token");
+        res.clearCookie("user-token");
 
         return res.status(200).json({
             message: "Logout Successfully"

@@ -1,61 +1,87 @@
 import { useState } from 'react'
 import React from 'react'
-import { Link } from 'react-router-dom'
-const UserLogin = () => {
-    const[email,setEmail]=useState("");
-    const[password,setPassword]=useState("");
-    const [data, setData] = useState({})
+import { Link, useNavigate } from 'react-router-dom'
+import { UserDataContext } from '../context/UserContext'
+import { useContext } from 'react'
+import axios from "axios";
 
-    const submitHandler=(e)=>{
+const UserLogin = () => {
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [data, setData] = useState({})
+    const { user, setUser } = useContext(UserDataContext);
+    const navigate = useNavigate();
+    const submitHandler = async (e) => {
         e.preventDefault();
-        setData({email,password})
+        const data = { email, password };
+        try {
+            const response = await axios.post(
+                `${import.meta.env.VITE_BASE_URL}/users/login`,
+                data,
+                {
+                    withCredentials: true
+                }
+            );
+
+            console.log(response);
+
+            if (response.status === 200 && response.data.user) {
+                setUser(response.data.user);
+                localStorage.setItem("user-token",response.data.token);
+                navigate("/home");
+            }
+
+        } catch (error) {
+            console.log(error.response?.data || error.message);
+        }
+        setData({ email, password })
         setEmail("");
         setPassword("");
 
     }
-  return (
-    <div className='p-7 h-screen flex flex-col justify-between'>
-      <div>
-        <img className='w-16 mb-10' src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQYQy-OIkA6In0fTvVwZADPmFFibjmszu2A0g&s" alt="" />
+    return (
+        <div className='p-7 h-screen flex flex-col justify-between'>
+            <div>
+                <img className='w-16 mb-10' src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQYQy-OIkA6In0fTvVwZADPmFFibjmszu2A0g&s" alt="" />
 
-        <form onSubmit={(e) => {
-          submitHandler(e)
-        }}>
-          <h3 className='text-lg font-medium mb-2'>What's your email</h3>
-          <input
-            required
-            value={email}
-            onChange={(e)=>{setEmail(e.target.value)}}
-           
-            className='bg-[#eeeeee] mb-7 rounded-lg px-4 py-2  w-full text-lg placeholder:text-base'
-            type="email"
-            placeholder='email@example.com'
-          />
+                <form onSubmit={(e) => {
+                    submitHandler(e)
+                }}>
+                    <h3 className='text-lg font-medium mb-2'>What's your email</h3>
+                    <input
+                        required
+                        value={email}
+                        onChange={(e) => { setEmail(e.target.value) }}
 
-          <h3 className='text-lg font-medium mb-2'>Enter Password</h3>
+                        className='bg-[#eeeeee] mb-7 rounded-lg px-4 py-2  w-full text-lg placeholder:text-base'
+                        type="email"
+                        placeholder='email@example.com'
+                    />
 
-          <input
-            className='bg-[#eeeeee] mb-7 rounded-lg px-4 py-2  w-full text-lg placeholder:text-base'
-           value={password}
-            onChange={(e)=>{setPassword(e.target.value)}}
-            required type="password"
-            placeholder='password'
-          />
+                    <h3 className='text-lg font-medium mb-2'>Enter Password</h3>
 
-          <button
-            className='bg-[#111] text-white font-semibold mb-3 rounded-lg px-4 py-2 w-full text-lg placeholder:text-base'
-          >Login</button>
+                    <input
+                        className='bg-[#eeeeee] mb-7 rounded-lg px-4 py-2  w-full text-lg placeholder:text-base'
+                        value={password}
+                        onChange={(e) => { setPassword(e.target.value) }}
+                        required type="password"
+                        placeholder='password'
+                    />
 
-        </form>
-        <p className='text-center'>New here? <Link to='/signup' className='text-blue-600'>Create new Account</Link></p>
-      </div>
-      <div>
-        <Link
-          to='/captain-login'
-          className='bg-[#10b461] flex items-center justify-center text-white font-semibold mb-5 rounded-lg px-4 py-2 w-full text-lg placeholder:text-base'
-        >Sign in as Captain</Link>
-      </div>
-    </div>
-  )
+                    <button
+                        className='bg-[#111] text-white font-semibold mb-3 rounded-lg px-4 py-2 w-full text-lg placeholder:text-base'
+                    >Login</button>
+
+                </form>
+                <p className='text-center'>New here? <Link to='/signup' className='text-blue-600'>Create new Account</Link></p>
+            </div>
+            <div>
+                <Link
+                    to='/captain-login'
+                    className='bg-[#10b461] flex items-center justify-center text-white font-semibold mb-5 rounded-lg px-4 py-2 w-full text-lg placeholder:text-base'
+                >Sign in as Captain</Link>
+            </div>
+        </div>
+    )
 }
 export default UserLogin
