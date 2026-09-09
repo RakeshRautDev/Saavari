@@ -5,6 +5,7 @@ import connectDb from "./db/db.js";
 import userRoutes from "./routes/user.routes.js"
 import captainRoutes from "./routes/captain.routes.js"
 import cookieParser from "cookie-parser";
+import mapsRoutes from "./routes/maps.route.js"
 
 const app=express();
 app.use(cors({
@@ -34,6 +35,8 @@ app.use((err, req, res, next) => {
     });
 });
 
+
+app.use("/maps",mapsRoutes)
 
 
 export default app;
