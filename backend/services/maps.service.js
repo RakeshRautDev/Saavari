@@ -38,25 +38,31 @@ export const getAddressCoordinate = async (address) => {
 
 export const getDistanceTime = async (origin, destination) => {
     try {
+        // Convert addresses to coordinates
+        const originCoordinates = await getAddressCoordinate(origin);
+        const destinationCoordinates = await getAddressCoordinate(destination);
+
+        // Get route between coordinates
         const response = await axios.get(
             "https://api.geoapify.com/v1/routing",
             {
                 params: {
-                    waypoints: `${origin.lat},${origin.lng}|${destination.lat},${destination.lng}`,
+                    waypoints: `${originCoordinates.lat},${originCoordinates.lng}|${destinationCoordinates.lat},${destinationCoordinates.lng}`,
                     mode: "drive",
-                    apiKey: process.env.GEOAPIFY_API_KEY,
-                },
+                    apiKey: process.env.GEOAPIFY_API_KEY
+                }
             }
         );
 
         const route = response.data.features[0];
 
-        const distance = route.properties.distance;
-        const time = route.properties.time;
+        if (!route) {
+            throw new Error("Route not found");
+        }
 
         return {
-            distance: distance, // meters
-            duration: time,     // seconds
+            distance: route.properties.distance, // meters
+            duration: route.properties.time      // seconds
         };
 
     } catch (error) {

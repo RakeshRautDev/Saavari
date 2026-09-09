@@ -6,6 +6,7 @@ import userRoutes from "./routes/user.routes.js"
 import captainRoutes from "./routes/captain.routes.js"
 import cookieParser from "cookie-parser";
 import mapsRoutes from "./routes/maps.route.js"
+import rideRoutes from "./routes/ride.routes.js";
 
 const app=express();
 app.use(cors({
@@ -37,6 +38,7 @@ app.use((err, req, res, next) => {
 
 
 app.use("/maps",mapsRoutes)
+app.use("/rides",rideRoutes)
 
 
 export default app;

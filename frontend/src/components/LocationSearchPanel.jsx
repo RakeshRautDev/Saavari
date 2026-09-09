@@ -1,39 +1,65 @@
-import React from 'react'
+import React from "react";
 
-const LocationSearchPanel = (props) => {
-console.log(props)
-  const locations = [
-    "7 RCR, Prime Minister's Residence, New Delhi",
-    "Indira Gandhi International Airport, New Delhi",
-    "New Delhi Railway Station, New Delhi",
-    "India Gate, New Delhi",
-    "Connaught Place, New Delhi",
-    "Gurugram Cyber Hub, Gurugram",
-    "Noida Sector 18, Noida",
-    "Khan Market, New Delhi",
-    "Saket, New Delhi",
-    "Vasant Kunj, New Delhi"
-  ];
+const LocationSearchPanel = ({
+    setPannelOpen,
+    setvechiclePannel,
+    handleLocationSelect,
+    suggestion,
+    active,
+    pickup,
+    destination,
+    pickupCoordinates,
+    destinationCoordinates,findTrip
+}) => {
+    const canFindTrip =
+        pickup.trim() &&
+        destination.trim() &&
+        pickupCoordinates?.lat != null &&
+        pickupCoordinates?.lng != null &&
+        destinationCoordinates?.lat != null &&
+        destinationCoordinates?.lng != null;
 
-  return (
-    <div>
-      {locations && locations.map((elem,index) => (<div key={index} 
-      onClick={()=>
-        {
-          props.setvechiclePannel(true)
-          props.setPannelOpen(false)
-        }}
-      
-      className="flex gap-4 border-2 p-3  rounded-xl border-gray-100 active:border-black items-center my-4 justify-start">
-        <h2 className='bg-[#eee] h-8 flex items-center justify-center w-10  rounded-full'><i className='ri-map-pin-fill '></i></h2>
-        <h4 className='font-medium'>{elem}</h4>
-      </div>))}
+    return (
+        <div>
 
+            {/* Find Trip Button */}
+            {canFindTrip && (
+                <button
+                    onClick={() => {
+                        console.log("Pickup:", pickupCoordinates);
+                        console.log("Destination:", destinationCoordinates);
+                        findTrip();
 
+                        setPannelOpen(false);
+                        setvechiclePannel(true);
+                    }}
+                    className="w-full bg-black text-white py-3 rounded-lg font-medium mb-4"
+                >
+                    Find Trip
+                </button>
+            )}
 
+            {/* Location Suggestions */}
+            {suggestion &&
+                suggestion.map((elem, index) => (
+                    <div
+                        key={index}
+                        onClick={() => {
+                            handleLocationSelect(elem);
+                        }}
+                        className="flex gap-4 border-2 p-3 rounded-xl border-gray-100 active:border-black items-center my-4 justify-start"
+                    >
+                        <h2 className="bg-[#eee] h-8 w-10 flex items-center justify-center rounded-full shrink-0">
+                            <i className="ri-map-pin-fill"></i>
+                        </h2>
 
-    </div>
-  )
-}
+                        <h4 className="font-medium min-w-0 break-words">
+                            {elem.address.split(" - ")[0]}
+                        </h4>
+                    </div>
+                ))}
+        </div>
+    );
+};
 
-export default LocationSearchPanel
+export default LocationSearchPanel;

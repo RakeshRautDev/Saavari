@@ -48,13 +48,7 @@ export const getDistanceTimeController = async (req, res) => {
             });
         }
 
-        const originCoordinates = await getAddressCoordinate(origin);
-        const destinationCoordinates = await getAddressCoordinate(destination);
-
-        const result = await getDistanceTime(
-            originCoordinates,
-            destinationCoordinates
-        );
+        const result = await getDistanceTime(origin, destination);
 
         return res.status(200).json({
             message: "Distance and time calculated successfully",
