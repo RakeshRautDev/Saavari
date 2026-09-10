@@ -1,4 +1,5 @@
 import axios from "axios";
+import { captainModel } from "../models/captain.model.js";
 
 export const getAddressCoordinate = async (address) => {
     try {
@@ -38,11 +39,9 @@ export const getAddressCoordinate = async (address) => {
 
 export const getDistanceTime = async (origin, destination) => {
     try {
-        // Convert addresses to coordinates
         const originCoordinates = await getAddressCoordinate(origin);
         const destinationCoordinates = await getAddressCoordinate(destination);
 
-        // Get route between coordinates
         const response = await axios.get(
             "https://api.geoapify.com/v1/routing",
             {
@@ -103,4 +102,44 @@ export const getAutoCompleteSuggestions = async (input) => {
 
         throw new Error("Unable to fetch location suggestions");
     }
+};
+
+export const getCaptainsInTheRadius = async (lat, lng, radius) => {
+    console.log("Captain Radius:", lat, lng, radius);
+
+    // Use Haversine formula via $expr since location uses plain lat/lng numbers
+    // (not GeoJSON), so $geoWithin/$centreSphere won't work here.
+    const radiusInRadians = radius / 6371; // radius in km -> radians
+
+    const captains = await captainModel.find({
+        "location.lat": { $exists: true, $ne: null },
+        "location.lng": { $exists: true, $ne: null },
+        $expr: {
+            $lte: [
+                {
+                    $acos: {
+                        $add: [
+                            {
+                                $multiply: [
+                                    { $sin: { $multiply: ["$location.lat", Math.PI / 180] } },
+                                    { $sin: { $multiply: [lat, Math.PI / 180] } }
+                                ]
+                            },
+                            {
+                                $multiply: [
+                                    { $cos: { $multiply: ["$location.lat", Math.PI / 180] } },
+                                    { $cos: { $multiply: [lat, Math.PI / 180] } },
+                                    { $cos: { $multiply: [{ $subtract: ["$location.lng", lng] }, Math.PI / 180] } }
+                                ]
+                            }
+                        ]
+                    }
+                },
+                radiusInRadians
+            ]
+        }
+    });
+
+    console.log("Captains nearby:", captains.length);
+    return captains;
 };

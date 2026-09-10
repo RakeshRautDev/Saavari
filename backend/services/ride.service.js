@@ -1,4 +1,5 @@
 import { rideModel } from "../models/ride.model.js";
+import { sendMessageToSocketId } from "../socket.js";
 import { getDistanceTime } from "./maps.service.js";
 import { randomInt } from "node:crypto";
 export const createRide = async ({
@@ -83,4 +84,106 @@ export async function getFare(pickup, destination) {
 export const getOtp = () => {
     return randomInt(1000, 10000).toString();
     crypto.random
+};
+
+
+export const confirmRideService = async (rideId, captainId) => {
+    if (!rideId) {
+        throw new Error("Ride id is required");
+    }
+
+    if (!captainId) {
+        throw new Error("Captain id is required");
+    }
+
+    const ride = await rideModel
+        .findOne({ _id: rideId })
+        .select("+otp")
+        .populate("user")
+        .populate("captain");
+
+    if (!ride) {
+        throw new Error("Ride not found");
+    }
+
+    ride.status = "accepted";
+    ride.captain = captainId;
+
+    return ride.save();
+};
+
+export const startRideService = async ({ rideId, otp, captain }) => {
+
+    if (!rideId || !otp || !captain) {
+        throw new Error("All fields are required");
+    }
+
+    const ride = await rideModel
+        .findOne({
+            _id: rideId,
+            captain: captain._id
+        })
+        .populate("user")
+        .populate("captain")
+        .select("+otp");
+
+        console.log("Starting Ride ",ride)
+
+    if (!ride) {
+        throw new Error("Ride not found");
+    }
+
+    if (ride.status !== "accepted") {
+        throw new Error("Ride not accepted");
+    }
+
+    if (String(ride.otp) !== String(otp)) {
+        throw new Error("Invalid OTP");
+    }
+
+    ride.status = "ongoing";
+    await ride.save();
+
+    sendMessageToSocketId(
+        ride.user.socketId,
+        "ride-started",
+        {rideId,ride}
+        
+    );
+
+    return ride;
+};
+
+
+export const endRideService = async ({ rideId, captain }) => {
+    if (!rideId || !captain) {
+        throw new Error("All fields are required");
+    }
+
+    const ride = await rideModel.findOne({
+        _id: rideId,
+        captain: captain._id
+    })
+    .populate("user")
+    .populate("captain");
+
+    if (!ride) {
+        throw new Error("Ride not found");
+    }
+
+    if (ride.status !== "ongoing") {
+        throw new Error("Ride is not ongoing");
+    }
+
+    ride.status = "completed";
+
+    await ride.save();
+
+    sendMessageToSocketId(
+        ride.user.socketId,
+        "ride-ended",
+        ride
+    );
+
+    return ride;
 };

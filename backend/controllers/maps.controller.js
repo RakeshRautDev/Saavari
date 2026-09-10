@@ -1,9 +1,12 @@
+import { captainModel } from "../models/captain.model.js";
 import {
     getAddressCoordinate,
     getDistanceTime,
     getAutoCompleteSuggestions
 } from "../services/maps.service.js";
 import { validationResult } from "express-validator";
+
+
 export const getCoordinates = async (req, res) => {
     const error=validationResult(req);
     if(!error.isEmpty()){
@@ -90,3 +93,4 @@ export const getAutoCompleteSuggestionsController = async (req, res) => {
         });
     }
 };
+

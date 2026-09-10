@@ -1,8 +1,7 @@
 import { Router } from "express";
-import { authUser } from "../middleware/auth.middleware.js";
+import authCaptain, { authUser } from "../middleware/auth.middleware.js";
 import { body,query } from "express-validator";
-import { createRideController } from "../controllers/ride.controller.js";
-import { getFareController } from "../controllers/ride.controller.js";
+import { createRideController, confirmRide, getFareController,startRide ,endRide } from "../controllers/ride.controller.js";
 const router=Router();
 
 router.post("/create",
@@ -29,5 +28,21 @@ router.get(
     getFareController
 );
 
+router.post("/confirm",body("rideId").isMongoId().withMessage("Invalid RideId"),authCaptain,confirmRide);
 
+
+router.get(
+  "/start-ride",
+  query("rideId")
+    .isMongoId()
+    .withMessage("Invalid ride ID"),
+  query("otp")
+    .isLength({ min: 4, max: 4 })
+    .isNumeric()
+    .withMessage("OTP must be a 4-digit number"),
+  authCaptain,
+  startRide
+);
 export default router;
+
+router.post("/end-ride",body("rideId").isMongoId().withMessage("Invalid Ride Id"),authCaptain,endRide)

@@ -1,12 +1,15 @@
-import React from 'react'
+import React, { useContext } from 'react'
+import { CaptainDataContext } from '../context/CaptainContext.jsx';
 
 const CaptainDetails = () => {
+  const {captain}=useContext(CaptainDataContext);
   return (
     <div className=''>
         <div className='flex items-center justify-between'>
           <div className='flex items-center justify-between gap-3'>
             <img className='h-15 w-15 rounded-full object-cover' src="https://mediaproxy.tvtropes.org/width/1200/https://static.tvtropes.org/pmwiki/pub/images/megan_fox_9.jpg" alt="" />
-            <h4 className='text-lg font-medium'>Sumit Patra</h4>
+            <h4 className='text-lg font-medium uppercase '>{captain.fullname.firstname +" "+ captain.fullname.lastname}
+            </h4>
           </div>
           <div>
             <h4 className='text-xl font-semibold'>₹244</h4>
