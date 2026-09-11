@@ -3,14 +3,15 @@ import React from 'react'
 const VehiclePanel = (props) => {
     return (
         <div>
-            <h5 className='p-1 text-center w-[93%] absolute top-0' onClick={() => {
-                props.setVehiclePanel(false)
+            <h5 className='p-1 text-center w-[93%]' onClick={() => {
+                props.setvechiclePannel(false)
+                props.setPannelOpen(true)
             }}><i className="text-3xl text-gray-200 ri-arrow-down-wide-line"></i></h5>
             <h3 className='text-2xl font-semibold mb-5'>Choose a Vehicle</h3>
             <div onClick={() => {
                 props.SetSelectedVehicle("car");
                 props.setConfirmRidePanel(true);
-               
+                props.setvechiclePannel(false);
                 
             }} className='flex border-2 active:border-black  mb-2 rounded-xl w-full p-3  items-center justify-between'>
                 <img className='h-10 shrink-0' src="https://swyft.pl/wp-content/uploads/2023/05/how-many-people-can-a-uberx-take.jpg" alt="" />
@@ -23,8 +24,8 @@ const VehiclePanel = (props) => {
             </div>
             <div onClick={() => {
                 props.SetSelectedVehicle("motorcycle");
-                props.setConfirmRidePanel(true)
-                 
+                props.setConfirmRidePanel(true);
+                props.setvechiclePannel(false);
                 
             }} className='flex border-2 active:border-black mb-2 rounded-xl w-full p-3  items-center justify-between'>
                 <img className='h-15 shrink-0' src="https://img.autocarpro.in/autocarpro/4d3ef0c9-c75e-46a3-af25-fab216e0bfe8_Untitled.jpg?w=750&h=490&q=75&c=1" alt="" />
@@ -38,8 +39,8 @@ const VehiclePanel = (props) => {
             <div onClick={() => {
                 props.SetSelectedVehicle("auto");
                 props.setConfirmRidePanel(true);
+                props.setvechiclePannel(false);
                
-                
             }} className='flex border-2 active:border-black mb-2 rounded-xl w-full p-3  items-center justify-between'>
                 <img className='h-20 shrink-0' src="https://cn-geo1.uber.com/image-proc/crop/resizecrop/udam/format=auto/width=672/height=672/srcb64=aHR0cHM6Ly90Yi1zdGF0aWMudWJlci5jb20vcHJvZC91ZGFtLWFzc2V0cy9mYzEwMWZmOC04MWExLTQ2YzMtOTk1YS02N2I0YmJkMmYyYmYuanBn" alt="" />
                 <div className='ml-2 w-1/2'>

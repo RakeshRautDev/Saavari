@@ -55,6 +55,34 @@ const CaptainHome = () => {
 
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const checkCurrentRide = async () => {
+        try {
+            const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/rides/captain-current-ride`, {
+                withCredentials: true
+            });
+
+            if (response.data) {
+                const activeRide = response.data;
+                setRide(activeRide); // Save ride to state
+
+                if (activeRide.status === 'accepted') {
+                    // Captain accepted but hasn't picked up user yet
+                    setConfirmRidePopUpPanel(true);
+                } 
+                else if (activeRide.status === 'ongoing') {
+                    // Ride is active, jump straight to the riding page
+                    navigate('/captain-riding', { state: { ride: activeRide } });
+                }
+            }
+        } catch (error) {
+            console.error("No active ride or error:", error);
+        }
+    };
+
+    checkCurrentRide();
+  }, []);
+
   useEffect(()=>{
     if (!captain?._id){
       navigate("/captain-login");
@@ -155,7 +183,7 @@ return () => {
           />
         </div>
        <div ref={confirmRidePopUpPanelRef} className="fixed w-full h-screen z-10 translate-y-full bottom-0 px-3 py-6 bg-white">
-          <ConfirmRidePopUp setConfirmRidePopUpPanel={setConfirmRidePopUpPanel} setRidePopUpPanel={setRidePopUpPanel} ride={ride} />
+          <ConfirmRidePopUp setConfirmRidePopUpPanel={setConfirmRidePopUpPanel} setRidePopUpPanel={setRidePopUpPanel} ride={ride} setRide={setRide} />
         </div>
     </div>
   )

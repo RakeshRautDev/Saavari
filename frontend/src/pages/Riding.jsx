@@ -7,9 +7,27 @@ const Riding = () => {
     const location = useLocation();
     const navigate = useNavigate();
 
-    const rideData = location.state?.ride;
+    const [rideData, setRideData] = React.useState(location.state?.ride || null);
 
     const { socket, receiveMessage } = useContext(socketContextData);
+
+    useEffect(() => {
+        if (!rideData) {
+            import('axios').then(axios => {
+                axios.default.get(`${import.meta.env.VITE_BASE_URL}/rides/user-current-ride`, {
+                    withCredentials: true
+                }).then(response => {
+                    if (response.data && response.data.status === 'ongoing') {
+                        setRideData(response.data);
+                    } else {
+                        navigate('/home'); // Send back if no active ride
+                    }
+                }).catch(err => {
+                    navigate('/home');
+                });
+            });
+        }
+    }, [rideData, navigate]);
 
     useEffect(() => {
         if (!socket) return;

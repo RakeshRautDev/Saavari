@@ -4,6 +4,7 @@ import { validationResult } from 'express-validator';
 import { getFare,startRideService, endRideService } from "../services/ride.service.js";
 import { getAddressCoordinate, getCaptainsInTheRadius} from '../services/maps.service.js';
 import { sendMessageToSocketId } from '../socket.js';
+
 export const createRideController=async(req,res,next)=>{
     const errors=validationResult(req);
     if(!errors.isEmpty()){
@@ -160,5 +161,68 @@ export const endRide = async (req, res) => {
             success: false,
             message: error.message
         });
+    }
+};
+
+
+export const endride = async (req, res) => {
+    try {
+        const errors = validationResult(req);
+
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                success: false,
+                errors: errors.array()
+            });
+        }
+
+        const { rideid } = req.body;
+
+        const ride = await endRideService({
+            rideId: rideid,
+            captain: req.captain
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: "Ride ended successfully",
+            ride
+        });
+
+    } catch (error) {
+        return res.status(400).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+export const getUserCurrentRide = async (req, res) => {
+    try {
+        const { rideModel } = await import('../models/ride.model.js');
+        const ride = await rideModel.findOne({
+            user: req.user._id,
+            status: { $in: ['pending', 'accepted', 'ongoing'] }
+        })
+        .select('+otp')
+        .populate('captain');
+        
+        return res.status(200).json(ride);
+    } catch (error) {
+        return res.status(500).json({ message: "Error fetching current ride" });
+    }
+};
+
+export const getCaptainCurrentRide = async (req, res) => {
+    try {
+        const { rideModel } = await import('../models/ride.model.js');
+        const ride = await rideModel.findOne({
+            captain: req.captain._id,
+            status: { $in: ['accepted', 'ongoing'] }
+        }).populate('user'); 
+        
+        return res.status(200).json(ride);
+    } catch (error) {
+        return res.status(500).json({ message: "Error fetching current ride" });
     }
 };

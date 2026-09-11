@@ -2,7 +2,8 @@ import { captainModel } from "../models/captain.model.js";
 import {
     getAddressCoordinate,
     getDistanceTime,
-    getAutoCompleteSuggestions
+    getAutoCompleteSuggestions,
+    getRouteService
 } from "../services/maps.service.js";
 import { validationResult } from "express-validator";
 
@@ -94,3 +95,37 @@ export const getAutoCompleteSuggestionsController = async (req, res) => {
     }
 };
 
+export const getRoute = async (req, res) => {
+    try {
+        const errors = validationResult(req);
+
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                success: false,
+                errors: errors.array()
+            });
+        }
+
+        const { pickup, destination, vehicleType } = req.body;
+
+        const route = await getRouteService(
+            pickup,
+            destination,
+            vehicleType
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: "Route fetched successfully",
+            route
+        });
+
+    } catch (error) {
+        console.error("Get route controller error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: error.message || "Unable to fetch route"
+        });
+    }
+};

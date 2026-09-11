@@ -143,3 +143,68 @@ export const getCaptainsInTheRadius = async (lat, lng, radius) => {
     console.log("Captains nearby:", captains.length);
     return captains;
 };
+
+
+export const getRouteService = async (
+    pickup,
+    destination,
+    vehicleType = null
+) => {
+    try {
+        const getCoordinates = async (address) => {
+            const response = await axios.get(
+                "https://api.geoapify.com/v1/geocode/search",
+                {
+                    params: {
+                        text: address,
+                        apiKey: process.env.GEOAPIFY_API_KEY,
+                        limit: 1
+                    }
+                }
+            );
+
+            if (!response.data.features.length) {
+                throw new Error(`Location not found: ${address}`);
+            }
+
+            const properties = response.data.features[0].properties;
+
+            return {
+                lat: properties.lat,
+                lng: properties.lon
+            };
+        };
+
+        const pickupCoords = await getCoordinates(pickup);
+        const destinationCoords = await getCoordinates(destination);
+
+        const response = await axios.get(
+            "https://api.geoapify.com/v1/routing",
+            {
+                params: {
+                    waypoints:
+                        `${pickupCoords.lat},${pickupCoords.lng}|` +
+                        `${destinationCoords.lat},${destinationCoords.lng}`,
+                    mode: vehicleType || "drive",
+                    apiKey: process.env.GEOAPIFY_API_KEY
+                }
+            }
+        );
+
+        const route = response.data.features[0];
+
+        return {
+            distance: route.properties.distance,
+            time: route.properties.time,
+            coordinates: route.geometry.coordinates
+        };
+
+    } catch (error) {
+        console.error(
+            "Route error:",
+            error.response?.data || error.message
+        );
+
+        throw new Error("Unable to fetch route");
+    }
+};

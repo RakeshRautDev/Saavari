@@ -39,25 +39,27 @@ const LocationSearchPanel = ({
                 </button>
             )}
 
-            {/* Location Suggestions */}
-            {suggestion &&
-                suggestion.map((elem, index) => (
-                    <div
-                        key={index}
-                        onClick={() => {
-                            handleLocationSelect(elem);
-                        }}
-                        className="flex gap-4 border-2 p-3 rounded-xl border-gray-100 active:border-black items-center my-4 justify-start"
-                    >
-                        <h2 className="bg-[#eee] h-8 w-10 flex items-center justify-center rounded-full shrink-0">
-                            <i className="ri-map-pin-fill"></i>
-                        </h2>
+            {/* Location Suggestions — fixed height so panel doesn't jump */}
+            <div className="h-48 overflow-y-auto">
+                {suggestion &&
+                    suggestion.map((elem, index) => (
+                        <div
+                            key={index}
+                            onClick={() => {
+                                handleLocationSelect(elem);
+                            }}
+                            className="flex gap-4 border-2 p-3 rounded-xl border-gray-100 active:border-black items-center my-2 justify-start"
+                        >
+                            <h2 className="bg-[#eee] h-8 w-10 flex items-center justify-center rounded-full shrink-0">
+                                <i className="ri-map-pin-fill"></i>
+                            </h2>
 
-                        <h4 className="font-medium min-w-0 break-words">
-                            {elem.address.split(" - ")[0]}
-                        </h4>
-                    </div>
-                ))}
+                            <h4 className="font-medium min-w-0 break-words">
+                                {elem.address.split(" - ")[0]}
+                            </h4>
+                        </div>
+                    ))}
+            </div>
         </div>
     );
 };

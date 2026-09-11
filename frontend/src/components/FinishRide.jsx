@@ -4,8 +4,11 @@ import { useNavigate } from 'react-router-dom';
 
 const FinishRide = (props) => {
 const navigate=useNavigate()
+
     const endRideHandler = async () => {
         try {
+            // rideData IS the ride object — no nested .ride property
+            console.log("Ending ride:", props.rideData?._id)
             const response = await axios.post(
                 `${import.meta.env.VITE_BASE_URL}/rides/end-ride`,
                 {
@@ -17,14 +20,12 @@ const navigate=useNavigate()
             );
 
             console.log("Ride ended:", response.data);
-
-            // Close finish ride panel
             navigate("/captain-home")
 
         } catch (error) {
             console.error(
                 "Error ending ride:",
-                error.response?.data?.message || error.message
+                error.response?.data || error.message
             );
         }
     };
@@ -58,9 +59,9 @@ const navigate=useNavigate()
                     />
 
                     <h2 className='text-xl font-medium'>
-                        {props.rideData?.user?.firstname +
-                            " " +
-                            props.rideData?.user?.lastname}
+                        {props.rideData?.user?.fullname?.firstname
+                            ? props.rideData.user.fullname.firstname + " " + props.rideData.user.fullname.lastname
+                            : "Passenger"}
                     </h2>
                 </div>
 

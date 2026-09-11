@@ -11,3 +11,16 @@ body {
 button {
   font-family: inherit;
 }
+
+.leaflet-container {
+  z-index: 0;
+}
+
+.leaflet-popup,
+.leaflet-popup-pane {
+  z-index: 700 !important;
+}
+
+.leaflet-pane {
+  z-index: 400;
+}

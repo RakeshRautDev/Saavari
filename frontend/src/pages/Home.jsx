@@ -12,7 +12,7 @@ import { socketContextData } from '../context/SocketContext'
 import { UserDataContext } from '../context/UserContext'
 import { useNavigate } from 'react-router-dom'
 
-
+import LiveTracking from '../components/LiveTracking'
 
 const Home = () => {
 
@@ -23,12 +23,13 @@ const Home = () => {
   const [confirmRidePanel, setConfirmRidePanel] = useState(false)
   const [vehicleFound, setVehicleFound] = useState(false)
   const [waitingForDriver, setWaitingForDriver] = useState(false);
-  
+  const [location, setLocation] = useState([20.2724, 85.8339])
+
 
   const [active, setActive] = useState(null);
   const [suggestion, setSuggestion] = useState([])
-  const [fare,setFare]=useState({});
-  const [selectedVehicle,SetSelectedVehicle]=useState("");
+  const [fare, setFare] = useState({});
+  const [selectedVehicle, SetSelectedVehicle] = useState("");
 
 
 
@@ -38,155 +39,222 @@ const Home = () => {
   const confirmRidePanelRef = useRef(null);
   const vehicleFoundRef = useRef(null);
   const waitingForDriverRef = useRef(null);
+  const searchFormRef = useRef(null);
 
   const [pickupCoordinates, setPickupCoordinates] = useState(null);
-const [destinationCoordinates, setDestinationCoordinates] = useState(null);
-const {sendMessage, receiveMessage,socket}=useContext(socketContextData);
-const {user}=useContext(UserDataContext)
-console.log(user)
-
-useEffect(()=>{
-  sendMessage("join",{userType:"user",userId:user._id})
-},[])
-
+  const [destinationCoordinates, setDestinationCoordinates] = useState(null);
+  const { sendMessage, receiveMessage, socket } = useContext(socketContextData);
+  const { user } = useContext(UserDataContext)
 
   const [rideData, setRideData] = useState(null);
-  const navigate=useNavigate();
-useEffect(() => {
+  const navigate = useNavigate();
+
+
+
+  const [mapCenter, setMapCenter] = useState(location);
+  const [route, setRoute] = useState([]);
+  const [captainLocation, setCaptainLocation] = useState(null);
+
+
+  useEffect(() => {
+
+    const fetchLocation = ()=>{
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            console.log(pos.coords)
+            setLocation([
+              pos.coords.latitude,
+              pos.coords.longitude
+            ]);
+          },
+          (error) => {
+            console.error("Geolocation error:", error);
+          }
+        );
+      }
+    }
+    fetchLocation()
+
+    const cleanup=setInterval(fetchLocation,5000);
+    return clearInterval(cleanup)
+  }, []);
+
+
+  useEffect(() => {
+    sendMessage("join", { userType: "user", userId: user._id })
+  }, [])
+
+  useEffect(() => {
+    const checkCurrentRide = async () => {
+      try {
+        const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/rides/user-current-ride`, {
+          withCredentials: true
+        });
+
+        if (response.data) {
+          const activeRide = response.data;
+          setRideData(activeRide);
+
+          if (activeRide.status === 'pending') {
+            setVehicleFound(true);
+          }
+          else if (activeRide.status === 'accepted') {
+            setWaitingForDriver(true);
+          }
+          else if (activeRide.status === 'ongoing') {
+            navigate('/riding', { state: { ride: activeRide } });
+          }
+        }
+      } catch (error) {
+        console.error("No active ride or error:", error);
+      }
+    };
+
+    checkCurrentRide();
+  }, []);
+
+
+  useEffect(() => {
     if (!socket) return;
 
     const cleanupConfirmed = receiveMessage("ride-confirmed", (ride) => {
-        console.log("Ride confirmed:", ride);
-        
+      console.log("Ride confirmed:", ride);
 
-        setRideData(ride);
-        setVehicleFound(false);
-        setWaitingForDriver(true);
-        setvechiclePannel(false);
+
+      setRideData(ride);
+      setVehicleFound(false);
+      setWaitingForDriver(true);
+      setvechiclePannel(false);
     });
 
     const cleanupStarted = receiveMessage("ride-started", (ride) => {
-        console.log("Ride started:", ride.rideId);
-      
-        navigate("/riding",{state:{ride:ride.ride}})
+      console.log("Ride started:", ride.rideId);
 
-        setWaitingForDriver(false);
+      navigate("/riding", { state: { ride: ride.ride } })
+
+      setWaitingForDriver(false);
     });
 
     return () => {
-        cleanupConfirmed?.();
-        cleanupStarted?.();
+      cleanupConfirmed?.();
+      cleanupStarted?.();
     };
 
-}, [socket]);
+  }, [socket]);
 
-useEffect(() => {
+  useEffect(() => {
 
     const fetchSuggestion = async () => {
 
-        let value = "";
+      let value = "";
 
-        if (active === "pickup") {
-            value = pickup;
-        } 
-        else if (active === "destination") {
-            value = destination;
-        }
+      if (active === "pickup") {
+        value = pickup;
+      }
+      else if (active === "destination") {
+        value = destination;
+      }
 
-        if (value.length < 3) {
-            setSuggestion([]);
-            return;
-        }
+      if (value.length < 3) {
+        setSuggestion([]);
+        return;
+      }
 
-        try {
+      try {
 
-            const res = await axios.get(
-                `${import.meta.env.VITE_BASE_URL}/maps/get-suggestions`,
-                {
-                    params: {
-                        input: value
-                    },withCredentials:true
-                },
-                
-            );
+        const res = await axios.get(
+          `${import.meta.env.VITE_BASE_URL}/maps/get-suggestions`,
+          {
+            params: {
+              input: value
+            }, withCredentials: true
+          },
 
-            console.log(res.data);
+        );
 
-            setSuggestion(res.data.suggestions);
+        console.log(res.data);
 
-        } catch (error) {
+        setSuggestion(res.data.suggestions);
 
-            console.log(error);
-            console.log(error.response);
+      } catch (error) {
 
-        }
+        console.log(error);
+        console.log(error.response);
+
+      }
     };
 
     const timer = setTimeout(() => {
-        fetchSuggestion();
+      fetchSuggestion();
     }, 300);
 
     return () => clearTimeout(timer);
 
-}, [pickup, destination, active]);
+  }, [pickup, destination, active]);
 
 
   const handleLocationSelect = (elem) => {
- if (active === "pickup") {
-        setPickup(elem.address);
-        setPickupCoordinates({
-            lat: elem.lat,
-            lng: elem.lng
-        });
+    if (active === "pickup") {
+      setPickup(elem.address);
+      setPickupCoordinates({
+        lat: elem.lat,
+        lng: elem.lng
+      });
+      setMapCenter([elem.lat,elem.lng])
+
+
     }
 
     if (active === "destination") {
-        setDestination(elem.address);
-        setDestinationCoordinates({
-            lat: elem.lat,
-            lng: elem.lng
-        });
+      setDestination(elem.address);
+      setDestinationCoordinates({
+        lat: elem.lat,
+        lng: elem.lng
+      });
+      setMapCenter([elem.lat,elem.lng])
     }
   };
 
 
-  const findTrip=async ()=>{
+  const findTrip = async () => {
 
-    if(!destinationCoordinates && !pickupCoordinates ){
-      return 
+    if (!destinationCoordinates && !pickupCoordinates) {
+      return
     }
-      try {
-        const res=await axios.get(`${import.meta.env.VITE_BASE_URL}/rides/get-fare`, {
+    try {
+      const res = await axios.get(`${import.meta.env.VITE_BASE_URL}/rides/get-fare`, {
         params: {
-            pickup: pickup,
-            destination: destination
+          pickup: pickup,
+          destination: destination
         },
         withCredentials: true
-    })
-    setFare(res.data.fare);
-    console.log(res)
-      } catch (error) {
-        
-      }
-  }
-
-  const createRide=async(vehicleType)=>{
-console.log("creating ride")
-    try {
-      const response=await axios.post(`${import.meta.env.VITE_BASE_URL}/rides/create`,{pickup,destination,vehicleType},{withCredentials:true});
-      console.log("Response",response);
-
+      })
+      setFare(res.data.fare);
+      console.log(res)
     } catch (error) {
-     
-  console.log("Create ride error:", error.response?.data || error.message);
 
     }
   }
 
-  const image={
-    car:"https://swyft.pl/wp-content/uploads/2023/05/how-many-people-can-a-uberx-take.jpg",
-    auto:"https://cn-geo1.uber.com/image-proc/crop/resizecrop/udam/format=auto/width=672/height=672/srcb64=aHR0cHM6Ly90Yi1zdGF0aWMudWJlci5jb20vcHJvZC91ZGFtLWFzc2V0cy9mYzEwMWZmOC04MWExLTQ2YzMtOTk1YS02N2I0YmJkMmYyYmYuanBn",
-    motorcycle:"https://img.autocarpro.in/autocarpro/4d3ef0c9-c75e-46a3-af25-fab216e0bfe8_Untitled.jpg?w=750&h=490&q=75&c=1"
+  const createRide = async (vehicleType) => {
+    console.log("creating ride")
+    try {
+      const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/rides/create`, { pickup, destination, vehicleType }, { withCredentials: true });
+      console.log("Response", response);
+
+
+    } catch (error) {
+
+      console.log("Create ride error:", error.response?.data || error.message);
+
+    }
+  }
+
+  const image = {
+    car: "https://swyft.pl/wp-content/uploads/2023/05/how-many-people-can-a-uberx-take.jpg",
+    auto: "https://cn-geo1.uber.com/image-proc/crop/resizecrop/udam/format=auto/width=672/height=672/srcb64=aHR0cHM6Ly90Yi1zdGF0aWMudWJlci5jb20vcHJvZC91ZGFtLWFzc2V0cy9mYzEwMWZmOC04MWExLTQ2YzMtOTk1YS02N2I0YmJkMmYyYmYuanBn",
+    motorcycle: "https://img.autocarpro.in/autocarpro/4d3ef0c9-c75e-46a3-af25-fab216e0bfe8_Untitled.jpg?w=750&h=490&q=75&c=1"
   }
   const submitHandler = (e) => {
     e.preventDefault()
@@ -199,82 +267,53 @@ console.log("creating ride")
 
   useGSAP(() => {
     if (pannelOpen) {
-      gsap.to(panelRef.current, {
-        height: "70%",
-        duration: 0.5,
-        ease: "power2.out"
-      })
-      gsap.to(pannelCloseRef.current, {
-        opacity: 1
-      })
+      gsap.to(panelRef.current, { maxHeight: 700, duration: 0.4, ease: "power2.out" })
+      gsap.to(pannelCloseRef.current, { opacity: 1, duration: 0.2 })
     } else {
-      gsap.to(panelRef.current, {
-        height: "0%",
-        duration: 0.5,
-        ease: "power2.out"
-      })
-      gsap.to(pannelCloseRef.current, {
-        opacity: 0
-      })
+      gsap.to(panelRef.current, { maxHeight: 0, duration: 0.4, ease: "power2.out" })
+      gsap.to(pannelCloseRef.current, { opacity: 0, duration: 0.2 })
     }
   }, [pannelOpen])
 
-
-
-
   useGSAP(() => {
     if (confirmRidePanel) {
-      gsap.to(confirmRidePanelRef.current, {
-        transform: "translateY(0)"
-      })
-    }
-    else {
-      gsap.to(confirmRidePanelRef.current, {
-        transform: "translateY(100%)"
-      })
+      gsap.to(confirmRidePanelRef.current, { maxHeight: 700, duration: 0.4, ease: "power2.out" })
+    } else {
+      gsap.to(confirmRidePanelRef.current, { maxHeight: 0, duration: 0.4, ease: "power2.out" })
     }
   }, [confirmRidePanel])
 
-
   useGSAP(() => {
     if (vechiclePannel) {
-      gsap.to(vechiclePannelRef.current, {
-        transform: "translateY(0)"
-      })
-    }
-    else {
-      gsap.to(vechiclePannelRef.current, {
-        transform: "translateY(100%)"
-      })
+      gsap.to(vechiclePannelRef.current, { maxHeight: 700, duration: 0.4, ease: "power2.out" })
+    } else {
+      gsap.to(vechiclePannelRef.current, { maxHeight: 0, duration: 0.4, ease: "power2.out" })
     }
   }, [vechiclePannel])
 
-
   useGSAP(() => {
     if (vehicleFound) {
-      gsap.to(vehicleFoundRef.current, {
-        transform: "translateY(0)"
-      })
-    }
-    else {
-      gsap.to(vehicleFoundRef.current, {
-        transform: "translateY(100%)"
-      })
+      gsap.to(vehicleFoundRef.current, { maxHeight: 700, duration: 0.4, ease: "power2.out" })
+    } else {
+      gsap.to(vehicleFoundRef.current, { maxHeight: 0, duration: 0.4, ease: "power2.out" })
     }
   }, [vehicleFound])
 
   useGSAP(() => {
     if (waitingForDriver) {
-      gsap.to(waitingForDriverRef.current, {
-        transform: "translateY(0)"
-      })
-    }
-    else {
-      gsap.to(waitingForDriverRef.current, {
-        transform: "translateY(100%)"
-      })
+      gsap.to(waitingForDriverRef.current, { maxHeight: 700, duration: 0.4, ease: "power2.out" })
+    } else {
+      gsap.to(waitingForDriverRef.current, { maxHeight: 0, duration: 0.4, ease: "power2.out" })
     }
   }, [waitingForDriver])
+
+  useGSAP(() => {
+    if (vechiclePannel || confirmRidePanel || vehicleFound || waitingForDriver) {
+      gsap.to(searchFormRef.current, { maxHeight: 0, opacity: 0, duration: 0.4, ease: "power2.out" })
+    } else {
+      gsap.to(searchFormRef.current, { maxHeight: 500, opacity: 1, duration: 0.4, ease: "power2.out" })
+    }
+  }, [vechiclePannel, confirmRidePanel, vehicleFound, waitingForDriver])
 
 
 
@@ -285,113 +324,157 @@ console.log("creating ride")
 
 
   return (
-    <div className='h-screen relative overflow-hidden'>
+    <div className='h-[100dvh] flex flex-col'>
 
-      <img
-        className='w-16 absolute left-5 top-5'
-        src="https://upload.wikimedia.org/wikipedia/commons/c/cc/Uber_logo_2018.png"
-        alt="Uber"
-      />
-
-      <div
-        className='h-screen w-screen'>
+      {/* Map section — grows/shrinks as bottom panels open */}
+      <div className='flex-1 min-h-0 relative'>
         <img
-          className='h-full w-full object-cover'
-          src="https://miro.medium.com/v2/resize:fit:1100/format:webp/0*gwMx05pqII5hbfmX.gif"
-          alt=""
+          className='w-14 sm:w-16 absolute left-4 top-4 z-[500]'
+          src="https://upload.wikimedia.org/wikipedia/commons/c/cc/Uber_logo_2018.png"
+          alt="Uber"
+        />
+        <LiveTracking location={location} mapCenter={mapCenter} route={route} captainLocation={captainLocation} 
+        pickupLocation={pickupCoordinates}
+        destinationLocation={destinationCoordinates}
+        
+        
         />
       </div>
 
-      <div className='absolute top-0 w-full flex flex-col justify-end h-screen'>
+      {/* Bottom section — all panels stack here in normal flow */}
+      <div className='bg-white w-full shadow-[0_-4px_16px_rgba(0,0,0,0.1)]'>
 
-        <div className='bg-white h-[30%] p-5 relative'>
-          <h5 ref={pannelCloseRef} onClick={() => setPannelOpen(false)} className='absolute opacity-0 right-6 top-6 text-2xl'>
-            <i className="ri-arrow-down-wide-line"></i>
-          </h5>
+        {/* Search form */}
+        <div ref={searchFormRef} style={{ maxHeight: 500, overflow: 'hidden' }}>
+          <div className='px-4 pt-4 pb-3 relative'>
+            <h5
+              ref={pannelCloseRef}
+              onClick={() => setPannelOpen(false)}
+              className='absolute opacity-0 right-5 top-4 text-2xl cursor-pointer z-10'
+            >
+              <i className="ri-arrow-down-wide-line"></i>
+            </h5>
 
-          <h4 className='text-3xl font-semibold'>
-            Find a trip
-          </h4>
+            <h4 className='text-2xl sm:text-3xl font-semibold mb-3'>Find a trip</h4>
 
-          <form onSubmit={submitHandler}>
-
-            <div className="relative mt-5">
-
-    {/* Vertical line */}
-    <div className="absolute left-5 top-5 bottom-5 w-1 bg-gray-800 rounded"></div>
-
-    <input
-        className="bg-[#eee] px-12 py-2 text-base rounded-lg w-full"
-        type="text"
-        placeholder="Enter your pick-up location"
-        value={pickup}
-        onChange={(e) => {
-            setPickup(e.target.value)
-            setActive("pickup")
-        }}
-        onClick={() => setPannelOpen(true)}
-    />
-
-    <input
-        className="bg-[#eee] px-12 py-2 text-base rounded-lg w-full mt-3"
-        type="text"
-        placeholder="Enter your destination"
-        value={destination}
-        onChange={(e) => {
-            setDestination(e.target.value)
-            setActive("destination")
-        }}
-        onClick={() => setPannelOpen(true)}
-    />
-
-</div>
-          </form>
-
+            <form onSubmit={submitHandler}>
+              <div className="relative">
+                <div className="absolute left-5 top-[14px] bottom-[14px] w-[3px] bg-gray-800 rounded"></div>
+                <input
+                  className="bg-[#eee] px-12 py-2.5 text-sm sm:text-base rounded-lg w-full"
+                  type="text"
+                  placeholder="Enter your pick-up location"
+                  value={pickup}
+                  onChange={(e) => { setPickup(e.target.value); setActive("pickup"); }}
+                  onClick={() => setPannelOpen(true)}
+                />
+                <input
+                  className="bg-[#eee] px-12 py-2.5 text-sm sm:text-base rounded-lg w-full mt-3"
+                  type="text"
+                  placeholder="Enter your destination"
+                  value={destination}
+                  onChange={(e) => { setDestination(e.target.value); setActive("destination"); }}
+                  onClick={() => setPannelOpen(true)}
+                />
+              </div>
+            </form>
+          </div>
         </div>
 
+        {/* Location suggestions — expands in flow, map shrinks */}
         <div
           ref={panelRef}
-          className={`h-0 ${pannelOpen ? "p-5" : "p-0"}  bg-white overflow-hidden`}
+          style={{ maxHeight: 0, overflow: 'hidden' }}
         >
-         <LocationSearchPanel
-    setPannelOpen={setPannelOpen}
-    setvechiclePannel={setvechiclePannel}
-    handleLocationSelect={handleLocationSelect}
-    suggestion={suggestion}
-    active={active}
-    pickup={pickup}
-    destination={destination}
-    pickupCoordinates={pickupCoordinates}
-    destinationCoordinates={destinationCoordinates} findTrip={findTrip}
-/>
+          <div className="px-4 pb-4">
+            <LocationSearchPanel
+              setPannelOpen={setPannelOpen}
+              setvechiclePannel={setvechiclePannel}
+              handleLocationSelect={handleLocationSelect}
+              suggestion={suggestion}
+              active={active}
+              pickup={pickup}
+              destination={destination}
+              pickupCoordinates={pickupCoordinates}
+              destinationCoordinates={destinationCoordinates}
+              findTrip={findTrip}
+            />
+          </div>
+        </div>
+
+        {/* Vehicle selection — expands in flow */}
+        <div
+          ref={vechiclePannelRef}
+          style={{ maxHeight: 0, overflow: 'hidden' }}
+        >
+          <div className="px-3 pt-2 pb-6">
+            <VehiclePanel
+              setConfirmRidePanel={setConfirmRidePanel}
+              setvechiclePannel={setvechiclePannel}
+              setPannelOpen={setPannelOpen}
+              fare={fare}
+              SetSelectedVehicle={SetSelectedVehicle}
+              createRide={createRide}
+            />
+          </div>
+        </div>
+
+        {/* Confirm ride — expands in flow */}
+        <div
+          ref={confirmRidePanelRef}
+          style={{ maxHeight: 0, overflow: 'hidden' }}
+        >
+          <div className="px-3 pt-4 pb-8">
+            <ConfirmRide
+              setConfirmRidePanel={setConfirmRidePanel}
+              setvechiclePannel={setvechiclePannel}
+              setVehicleFound={setVehicleFound}
+              pickup={pickup}
+              destination={destination}
+              selectedVehicle={selectedVehicle}
+              fare={fare}
+              image={image}
+              createRide={createRide}
+            />
+          </div>
+        </div>
+
+        {/* Looking for driver — expands in flow */}
+        <div
+          ref={vehicleFoundRef}
+          style={{ maxHeight: 0, overflow: 'hidden' }}
+        >
+          <div className="px-3 pt-4 pb-8">
+            <LookingForDriver
+              setConfirmRidePanel={setConfirmRidePanel}
+              setvechiclePannel={setvechiclePannel}
+              active={active}
+              pickup={pickup}
+              destination={destination}
+              selectedVehicle={selectedVehicle}
+              fare={fare}
+              image={image}
+              setVehicleFound={setVehicleFound}
+              rideData={rideData}
+            />
+          </div>
+        </div>
+
+        {/* Waiting for driver — expands in flow */}
+        <div
+          ref={waitingForDriverRef}
+          style={{ maxHeight: 0, overflow: 'hidden' }}
+        >
+          <div className="px-3 pt-4 pb-8">
+            <WaitingForDriver
+              waitingForDriver={waitingForDriver}
+              rideData={rideData}
+              setWaitingForDriver={setWaitingForDriver}
+            />
+          </div>
         </div>
 
       </div>
-
-
-      <div ref={vechiclePannelRef} className="fixed w-full z-10 translate-y-full bottom-0 px-3 py-6 bg-white">
-        <VehiclePanel setConfirmRidePanel={setConfirmRidePanel} setvechiclePannel={setvechiclePannel} fare={fare} SetSelectedVehicle={SetSelectedVehicle}
-        createRide={createRide}
-        ></VehiclePanel>
-      </div>
-
-      <div ref={confirmRidePanelRef} className='fixed w-full z-10 bottom-0 translate-y-full bg-white px-3 py-10 pt-14'>
-
-        <ConfirmRide setConfirmRidePanel={setConfirmRidePanel} setvechiclePannel={setvechiclePannel} setVehicleFound={setVehicleFound} pickup={pickup} destination={destination} selectedVehicle={selectedVehicle} fare={fare} image={image}  createRide={createRide}
-        />
-      </div>
-      <div ref={vehicleFoundRef} className='fixed w-full max-h-[90vh] z-10 bottom-0 translate-y-full bg-white px-3 py-10'>
-
-        <LookingForDriver setConfirmRidePanel={setConfirmRidePanel} setvechiclePannel={setvechiclePannel} active={active} pickup={pickup} destination={destination} selectedVehicle={selectedVehicle} fare={fare} image={image} setVehicleFound={setVehicleFound}
-        />
-      </div>
-      <div ref={waitingForDriverRef} className='fixed w-full translate-y-full z-10 bottom-0 bg-white px-3 py-10'>
-
-        <WaitingForDriver waitingForDriver={waitingForDriver} rideData={rideData} setWaitingForDriver={setWaitingForDriver}
-        />
-      </div>
-
-
     </div>
   )
 }

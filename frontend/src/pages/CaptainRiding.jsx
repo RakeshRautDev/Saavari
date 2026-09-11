@@ -3,13 +3,34 @@ import { Link, useLocation } from 'react-router-dom'
 import FinishRide from '../components/FinishRide'
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
+import { useNavigate } from 'react-router-dom';
 const CaptainRiding = () => {
 
     const [finish, setfinish] = useState(false)
     const finishRidePanelRef = useRef(null)
-    const location =useLocation();
-    const rideData=location.state?.ride;
+    const location = useLocation();
+    const navigate = useNavigate();
 
+    // startRide returns { success, message, ride } — unwrap the ride object
+    const [rideData, setRideData] = useState(location.state?.ride?.ride ?? location.state?.ride ?? null);
+
+    React.useEffect(() => {
+        if (!rideData) {
+            import('axios').then(axios => {
+                axios.default.get(`${import.meta.env.VITE_BASE_URL}/rides/captain-current-ride`, {
+                    withCredentials: true
+                }).then(response => {
+                    if (response.data && response.data.status === 'ongoing') {
+                        setRideData(response.data);
+                    } else {
+                        navigate('/captain-home'); 
+                    }
+                }).catch(err => {
+                    navigate('/captain-home');
+                });
+            });
+        }
+    }, [rideData, navigate]);
 
     useGSAP(() => {
         if (finish) {

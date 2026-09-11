@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authUser } from '../middleware/auth.middleware.js';
 import { getAddressCoordinate } from '../services/maps.service.js';
-import { getCoordinates,getDistanceTimeController, getAutoCompleteSuggestionsController} from './../controllers/maps.controller.js';
+import { getCoordinates,getDistanceTimeController, getAutoCompleteSuggestionsController, getRoute} from './../controllers/maps.controller.js';
 import { query } from 'express-validator';
 
 const router=Router();
@@ -23,4 +23,26 @@ router.get("/get-suggestions",
     authUser,
     getAutoCompleteSuggestionsController
 )
+
+
+router.get(
+    "/get-route",
+    [
+        query("pickup")
+            .trim()
+            .notEmpty()
+            .withMessage("Pickup location is required"),
+
+        query("destination")
+            .trim()
+            .notEmpty()
+            .withMessage("Destination is required"),
+
+        query("vehicleType")
+            .optional()
+            .isIn(["car", "bike", "auto"])
+            .withMessage("Invalid vehicle type")
+    ],
+    getRoute
+);
 export default router; 
