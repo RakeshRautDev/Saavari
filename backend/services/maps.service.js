@@ -162,7 +162,7 @@ export const getRouteService = async (
                     }
                 }
             );
-
+console.log("Response Data:",response.data)
             if (!response.data.features.length) {
                 throw new Error(`Location not found: ${address}`);
             }

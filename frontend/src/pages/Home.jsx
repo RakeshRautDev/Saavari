@@ -263,6 +263,45 @@ const Home = () => {
   }
 
 
+ const fetchRoute = async () => {
+  try {
+    console.log("Fetching Route");
+    console.log("Pickup:", pickupCoordinates);
+    console.log("Destination:", destinationCoordinates);
+
+    if (!pickupCoordinates || !destinationCoordinates) {
+      return;
+    }
+
+    const response = await axios.get(
+      `${import.meta.env.VITE_BASE_URL}/maps/get-route`,
+      {
+        params: {
+          pickup: `${pickupCoordinates.lat},${pickupCoordinates.lng}`,
+          destination: `${destinationCoordinates.lat},${destinationCoordinates.lng}`,
+        },
+      }
+    );
+
+    console.log("Route:", response.data);
+
+    const coordinates = response.data.route.coordinates[0];
+
+    const leafletRoute = coordinates.map(([lng, lat]) => [lat, lng]);
+
+    console.log("Leaflet Route:", leafletRoute);
+
+    setRoute(leafletRoute);
+
+    return response.data;
+
+  } catch (error) {
+    console.error(
+      "Error fetching route:",
+      error.response?.data || error.message
+    );
+  }
+};
 
 
   useGSAP(() => {
@@ -398,6 +437,7 @@ const Home = () => {
               pickupCoordinates={pickupCoordinates}
               destinationCoordinates={destinationCoordinates}
               findTrip={findTrip}
+               fetchRoute={ fetchRoute}
             />
           </div>
         </div>

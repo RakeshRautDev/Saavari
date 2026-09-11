@@ -29,12 +29,12 @@ router.get(
     "/get-route",
     [
         query("pickup")
-            .trim()
+            
             .notEmpty()
             .withMessage("Pickup location is required"),
 
         query("destination")
-            .trim()
+            
             .notEmpty()
             .withMessage("Destination is required"),
 

@@ -106,8 +106,9 @@ export const getRoute = async (req, res) => {
             });
         }
 
-        const { pickup, destination, vehicleType } = req.body;
+        const { pickup, destination, vehicleType } = req.query;
 
+        console.log(pickup,destination)
         const route = await getRouteService(
             pickup,
             destination,

@@ -9,7 +9,7 @@ const LocationSearchPanel = ({
     pickup,
     destination,
     pickupCoordinates,
-    destinationCoordinates,findTrip
+    destinationCoordinates,findTrip, fetchRoute
 }) => {
     const canFindTrip =
         pickup.trim() &&
@@ -29,9 +29,11 @@ const LocationSearchPanel = ({
                         console.log("Pickup:", pickupCoordinates);
                         console.log("Destination:", destinationCoordinates);
                         findTrip();
+                         fetchRoute();
 
                         setPannelOpen(false);
                         setvechiclePannel(true);
+
                     }}
                     className="w-full bg-black text-white py-3 rounded-lg font-medium mb-4"
                 >
