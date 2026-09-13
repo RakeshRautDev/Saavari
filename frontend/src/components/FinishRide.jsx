@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
 const FinishRide = (props) => {
-const navigate=useNavigate()
+    const navigate = useNavigate()
+    const [loading, setLoading] = useState(false);
 
     const endRideHandler = async () => {
+        if (loading) return;
+        setLoading(true);
         try {
             // rideData IS the ride object — no nested .ride property
             console.log("Ending ride:", props.rideData?._id)
@@ -15,18 +18,20 @@ const navigate=useNavigate()
                     rideid: props.rideData?._id
                 },
                 {
+                    headers: { Authorization: `Bearer ${localStorage.getItem('captain-token')}` },
                     withCredentials: true
                 }
             );
 
             console.log("Ride ended:", response.data);
-            navigate("/captain-home")
+            navigate("/captain-home", { state: { rateRide: props.rideData } })
 
         } catch (error) {
             console.error(
                 "Error ending ride:",
                 error.response?.data || error.message
             );
+            setLoading(false);
         }
     };
 
@@ -65,7 +70,9 @@ const navigate=useNavigate()
                     </h2>
                 </div>
 
-                <h5 className='text-lg font-semibold'>2.2 KM</h5>
+                <h5 className='text-lg font-semibold'>
+                    {props.rideData?.distance ? (props.rideData.distance / 1000).toFixed(1) + " KM" : ""}
+                </h5>
             </div>
 
             <div className='flex gap-2 justify-between flex-col items-center'>
@@ -120,9 +127,10 @@ const navigate=useNavigate()
 
                         <button
                             type="submit"
-                            className='w-full inline-block text-lg text-center mt-5 bg-green-600 text-white font-semibold p-2 rounded-lg'
+                            disabled={loading}
+                            className={`w-full inline-block text-lg text-center mt-5 text-white font-semibold p-2 rounded-lg ${loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600'}`}
                         >
-                            Finish Ride
+                            {loading ? 'Finishing...' : 'Finish Ride'}
                         </button>
 
                         <p className='mt-6 text-xs text-center'>

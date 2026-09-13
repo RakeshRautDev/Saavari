@@ -8,7 +8,8 @@ export const createCaptain = async ({
     color,
     plate,
     capacity,
-    vehicleType
+    vehicleType,
+    avatarUrl
 }) => {
 
     console.log("createCaptain service called");
@@ -40,6 +41,7 @@ export const createCaptain = async ({
         },
         email,
         password: hashedPassword,
+        avatarUrl: avatarUrl || "",
         vehicle: {
             color,
             plate,
@@ -53,4 +55,22 @@ export const createCaptain = async ({
 
     return captain;
 };
+export const toggleStatusService = async (captainId, newStatus) => {
+    if (!captainId || !newStatus) {
+        throw new Error("Captain ID and newStatus are required");
+    }
 
+    if (!["active", "inactive"].includes(newStatus)) {
+        throw new Error("Invalid status");
+    }
+
+    const captain = await Captain.findById(captainId);
+    if (!captain) {
+        throw new Error("Captain not found");
+    }
+
+    captain.status = newStatus;
+    await captain.save();
+
+    return captain;
+};

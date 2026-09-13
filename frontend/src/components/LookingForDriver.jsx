@@ -43,6 +43,14 @@ const LookingForDriver = (props) => {
                         </div>
                     </div>
                 </div>
+                {props.rideData && (
+                    <button 
+                        onClick={props.cancelRide}
+                        className='w-full mt-4 bg-red-500 text-white font-semibold p-3 rounded-lg hover:bg-red-600'
+                    >
+                        Cancel Ride
+                    </button>
+                )}
             </div>
         </div>
     )

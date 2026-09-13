@@ -15,7 +15,7 @@ export const registerUser = async (req, res, next) => {
 
         const firstname = req.body.fullname?.firstname || req.body.firstname;
         const lastname = req.body.fullname?.lastname || req.body.lastname;
-        const { email, password } = req.body;
+        const { email, password, avatarUrl } = req.body;
 
         const isUserAlreadyExist = await User.findOne({ email });
         if (isUserAlreadyExist) {
@@ -28,7 +28,8 @@ export const registerUser = async (req, res, next) => {
             firstname,
             lastname,
             email,
-            password
+            password,
+            avatarUrl
         });
 
         const token = user.generateAuthToken();

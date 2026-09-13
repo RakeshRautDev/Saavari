@@ -15,9 +15,17 @@ const rideSchema=new mongoose.Schema({
         type:String,
         required:true
     },
+    pickupCoords: {
+        type: { type: String, enum: ['Point'], default: 'Point' },
+        coordinates: { type: [Number], default: [0, 0] }
+    },
     destination:{
         type:String,
         required:true
+    },
+    destinationCoords: {
+        type: { type: String, enum: ['Point'], default: 'Point' },
+        coordinates: { type: [Number], default: [0, 0] }
     },
     fare:{
         type:Number,
@@ -25,7 +33,7 @@ const rideSchema=new mongoose.Schema({
     },
     status:{
         type:String,
-        enum:["pending","accepted","completed","cancelled","ongoing"],
+        enum:["pending","accepted","captain_arriving","captain_arrived","ongoing","completed","cancelled"],
         default:"pending"
     },
     duration:{
@@ -42,11 +50,27 @@ const rideSchema=new mongoose.Schema({
     },
     signature:{
         type:String
-    },otp:{
+    },
+    userRating: {
+        type: Number,
+        min: 1,
+        max: 5
+    },
+    captainRating: {
+        type: Number,
+        min: 1,
+        max: 5
+    },
+    otp:{
         type:String,
         select:false,
         required:true
-    }
+    },
+    messages: [{
+        senderType: { type: String, enum: ['user', 'captain'] },
+        content: String,
+        timestamp: { type: Date, default: Date.now }
+    }]
 },{timestamps:true});
 
 export const rideModel=mongoose.model("Ride",rideSchema)

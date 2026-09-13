@@ -57,4 +57,14 @@ router.post("/login",
 router.get("/profile",authCaptain ,getCaptainProfile)
 router.post("/logout",authCaptain,logoutCaptain)
 
-            export default router;
+import { toggleStatusController } from '../controllers/captain.controller.js';
+
+router.post("/status",
+    authCaptain,
+    [
+        body("status").isIn(["active", "inactive"]).withMessage("Invalid status")
+    ],
+    toggleStatusController
+)
+
+export default router;

@@ -17,7 +17,8 @@ export const registerCaptain = async (req, res, next) => {
             fullname,
             email,
             password,
-            vehicle
+            vehicle,
+            avatarUrl
         } = req.body;
 
         const existingCaptain = await captainModel.findOne({ email });
@@ -36,7 +37,8 @@ export const registerCaptain = async (req, res, next) => {
             color: vehicle.color,
             plate: vehicle.plate,
             capacity: vehicle.capacity,
-            vehicleType: vehicle.vehicleType
+            vehicleType: vehicle.vehicleType,
+            avatarUrl
         });
 
         const token = captain.generateAuthToken();
@@ -78,7 +80,7 @@ export const loginCaptain=async(req,res,next)=>{
     res.cookie("captain-token",token)
     const captainObject=captain.toObject();
     delete captainObject.password;
-    res.status(200).json({message:"Captain LoggedIn Successfully",captain:captainObject})
+    res.status(200).json({message:"Captain LoggedIn Successfully", token, captain:captainObject})
 }
 
 export const getCaptainProfile=async(req,res,next)=>{
@@ -111,5 +113,25 @@ export const logoutCaptain = async (req, res, next) => {
 
     } catch (error) {
         next(error);
+    }
+};
+
+import { toggleStatusService } from "../services/captain.service.js";
+
+export const toggleStatusController = async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { status } = req.body;
+    try {
+        const updatedCaptain = await toggleStatusService(req.captain._id, status);
+        return res.status(200).json({ 
+            message: "Status updated successfully", 
+            captain: updatedCaptain 
+        });
+    } catch (error) {
+        return res.status(400).json({ message: error.message });
     }
 };

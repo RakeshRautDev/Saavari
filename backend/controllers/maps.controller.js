@@ -3,10 +3,41 @@ import {
     getAddressCoordinate,
     getDistanceTime,
     getAutoCompleteSuggestions,
-    getRouteService
+    getRouteService,
+    getReverseGeocoding
 } from "../services/maps.service.js";
 import { validationResult } from "express-validator";
 
+export const getAddressFromCoordinates = async (req, res) => {
+    const error = validationResult(req);
+    if (!error.isEmpty()) {
+        return res.status(400).json({ error: error.array() });
+    }
+
+    try {
+        const { lat, lng } = req.query;
+
+        if (!lat || !lng) {
+            return res.status(400).json({
+                message: "Latitude and longitude are required"
+            });
+        }
+
+        const address = await getReverseGeocoding(lat, lng);
+
+        return res.status(200).json({
+            message: "Address fetched successfully",
+            address
+        });
+
+    } catch (error) {
+        console.error("Error fetching address:", error);
+
+        return res.status(500).json({
+            message: "Unable to fetch address"
+        });
+    }
+};
 
 export const getCoordinates = async (req, res) => {
     const error=validationResult(req);

@@ -1,0 +1,132 @@
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import axios from 'axios';
+import 'remixicon/fonts/remixicon.css';
+
+const CaptainHistory = () => {
+    const [history, setHistory] = useState([]);
+    const [analytics, setAnalytics] = useState({ totalRides: 0, totalEarnings: 0 });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                // Fetch History
+                const historyRes = await axios.get(`${import.meta.env.VITE_BASE_URL}/rides/captain-history`, {
+                    headers: { Authorization: `Bearer ${localStorage.getItem('captain-token')}` },
+                    withCredentials: true
+                });
+                setHistory(historyRes.data);
+
+                // Fetch Analytics
+                const analyticsRes = await axios.get(`${import.meta.env.VITE_BASE_URL}/rides/captain-analytics`, {
+                    headers: { Authorization: `Bearer ${localStorage.getItem('captain-token')}` },
+                    withCredentials: true
+                });
+                setAnalytics(analyticsRes.data);
+            } catch (error) {
+                console.error("Error fetching captain history/analytics:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, []);
+
+    return (
+        <div className='h-screen bg-gray-50 flex flex-col'>
+            {/* Header */}
+            <div className='bg-white p-5 flex items-center justify-between shadow-sm z-10'>
+                <div className='flex items-center gap-4'>
+                    <Link to='/captain-home' className='h-10 w-10 bg-gray-100 flex items-center justify-center rounded-full'>
+                        <i className="text-xl font-medium ri-arrow-left-line"></i>
+                    </Link>
+                    <h2 className='text-2xl font-bold'>Ride History</h2>
+                </div>
+            </div>
+
+            {/* Analytics Summary */}
+            <div className='bg-yellow-400 p-6 shadow-sm flex justify-around items-center text-gray-800'>
+                <div className='text-center'>
+                    <h3 className='text-sm font-medium uppercase tracking-wider mb-1 text-yellow-800'>Total Earned</h3>
+                    <p className='text-3xl font-bold'>₹{analytics.totalEarnings}</p>
+                </div>
+                <div className='w-px h-12 bg-yellow-500'></div>
+                <div className='text-center'>
+                    <h3 className='text-sm font-medium uppercase tracking-wider mb-1 text-yellow-800'>Total Rides</h3>
+                    <p className='text-3xl font-bold'>{analytics.totalRides}</p>
+                </div>
+            </div>
+
+            {/* List */}
+            <div className='p-4 flex-1 overflow-y-auto'>
+                {loading ? (
+                    <div className='flex justify-center items-center h-full'>
+                        <p className='text-gray-500'>Loading your rides...</p>
+                    </div>
+                ) : history.length === 0 ? (
+                    <div className='flex flex-col justify-center items-center h-full text-center'>
+                        <i className="ri-steering-2-line text-6xl text-gray-300 mb-4"></i>
+                        <h3 className='text-xl font-semibold text-gray-700'>No rides yet</h3>
+                        <p className='text-gray-500 mt-2'>Your completed trips will appear here.</p>
+                    </div>
+                ) : (
+                    <div className='flex flex-col gap-4'>
+                        {history.map(ride => (
+                            <div key={ride._id} className='bg-white p-4 rounded-xl shadow-sm border border-gray-100'>
+                                <div className='flex justify-between items-center mb-4'>
+                                    <span className='text-sm text-gray-500'>
+                                        {new Date(ride.createdAt).toLocaleDateString('en-US', {
+                                            month: 'short', day: 'numeric', year: 'numeric',
+                                            hour: 'numeric', minute: 'numeric'
+                                        })}
+                                    </span>
+                                    <span className='font-bold text-lg text-green-600'>+₹{ride.fare}</span>
+                                </div>
+
+                                <div className='flex flex-col gap-3 relative'>
+                                    <div className='absolute left-2.5 top-5 bottom-5 w-[2px] bg-gray-800 rounded'></div>
+                                    
+                                    <div className='flex items-start gap-4'>
+                                        <div className='mt-1 bg-gray-800 h-5 w-5 rounded-full flex items-center justify-center relative z-10'>
+                                            <div className='h-2 w-2 bg-white rounded-full'></div>
+                                        </div>
+                                        <div>
+                                            <p className='text-gray-800 font-medium'>{ride.pickup.split(",")[0]}</p>
+                                            <p className='text-xs text-gray-500 truncate w-48 sm:w-64'>{ride.pickup.split(",").slice(1).join(",")}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className='flex items-start gap-4'>
+                                        <div className='mt-1 bg-gray-800 h-5 w-5 rounded-sm flex items-center justify-center relative z-10'>
+                                            <div className='h-2 w-2 bg-white rounded-sm'></div>
+                                        </div>
+                                        <div>
+                                            <p className='text-gray-800 font-medium'>{ride.destination.split(",")[0]}</p>
+                                            <p className='text-xs text-gray-500 truncate w-48 sm:w-64'>{ride.destination.split(",").slice(1).join(",")}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {ride.user && (
+                                    <div className='mt-4 pt-4 border-t border-gray-100 flex items-center gap-3'>
+                                        <img className='h-10 w-10 bg-gray-200 rounded-full object-cover' src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT1Fz0ia5xvZzagpvuXp61ZUykVIngr6EdiiNm8yWw4aUBqTNJ-m7N0HEY&s=10" alt="user" />
+                                        <div>
+                                            <p className='text-sm font-medium'>Passenger: {ride.user.fullname?.firstname || "Guest"}</p>
+                                        </div>
+                                        <div className={`ml-auto text-xs px-2 py-1 rounded-md font-medium ${ride.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                            {ride.status.toUpperCase()}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+export default CaptainHistory;

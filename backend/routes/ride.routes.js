@@ -1,7 +1,11 @@
 import { Router } from "express";
 import authCaptain, { authUser } from "../middleware/auth.middleware.js";
 import { body,query } from "express-validator";
-import { createRideController, confirmRide, getFareController,startRide ,endRide, getUserCurrentRide, getCaptainCurrentRide } from "../controllers/ride.controller.js";
+import { 
+  createRideController, confirmRide, getFareController, startRide, endRide, 
+  getUserCurrentRide, getCaptainCurrentRide,
+  getUserHistoryController, getCaptainHistoryController, getCaptainAnalyticsController 
+} from "../controllers/ride.controller.js";
 const router=Router();
 
 router.post("/create",
@@ -52,5 +56,39 @@ router.post(
 
 router.get("/user-current-ride", authUser, getUserCurrentRide);
 router.get("/captain-current-ride", authCaptain, getCaptainCurrentRide);
+
+router.get("/user-history", authUser, getUserHistoryController);
+router.get("/captain-history", authCaptain, getCaptainHistoryController);
+router.get("/captain-analytics", authCaptain, getCaptainAnalyticsController);
+
+import { rateRideController } from "../controllers/ride.controller.js";
+
+router.post("/rate-captain", 
+  authUser, 
+  body("rideId").isMongoId().withMessage("Invalid Ride Id"),
+  body("rating").isNumeric().isInt({min:1, max:5}).withMessage("Rating must be 1-5"),
+  rateRideController
+);
+
+router.post("/rate-user", 
+  authCaptain, 
+  body("rideId").isMongoId().withMessage("Invalid Ride Id"),
+  body("rating").isNumeric().isInt({min:1, max:5}).withMessage("Rating must be 1-5"),
+  rateRideController
+);
+
+import { cancelRideController } from "../controllers/ride.controller.js";
+
+router.post("/cancel-user", 
+  authUser, 
+  body("rideId").isMongoId().withMessage("Invalid Ride Id"),
+  cancelRideController
+);
+
+router.post("/cancel-captain", 
+  authCaptain, 
+  body("rideId").isMongoId().withMessage("Invalid Ride Id"),
+  cancelRideController
+);
 
 export default router;

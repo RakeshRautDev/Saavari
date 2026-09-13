@@ -16,6 +16,12 @@ import Riding from './pages/Riding'
 import CaptainRiding from './pages/CaptainRiding'
 import 'remixicon/fonts/remixicon.css'
 
+import UserHistory from './pages/UserHistory'
+import UserProfile from './pages/UserProfile'
+import CaptainHistory from './pages/CaptainHistory'
+import AdminDashboard from './pages/AdminDashboard'
+import AITraceViewer from './pages/AITraceViewer'
+
 const App = () => {
   return (
     <>
@@ -32,20 +38,24 @@ const App = () => {
 
         <Route path="/captain-signup" element={<CaptainSignUp />}></Route>
 
+        <Route path="/admin" element={<AdminDashboard />}></Route>
+        <Route path="/admin/ai-trace" element={<AITraceViewer />}></Route>
+
        
 
         <Route element={<UserProtectedWrapper />}>
           <Route path="/home" element={<Home />} />
           <Route path="/user/logout" element={<UserLogout />} />
           <Route path='/riding' element={<Riding></Riding>}/>
-          
+          <Route path="/user/history" element={<UserHistory />} />
+          <Route path="/user/profile" element={<UserProfile />} />
         </Route>
 
        <Route element={<CaptainProtectedWrapper />}>
     <Route path="/captain-home" element={<CaptainHome />} />
     <Route path="/captain/logout" element={<CaptainLogout />} />
     <Route path="/captain-riding" element={<CaptainRiding />} />
-
+    <Route path="/captain/history" element={<CaptainHistory />} />
     {/* <Route path="/captain-profile" element={<CaptainProfile />} />
     <Route path="/captain-settings" element={<CaptainSettings />} /> */}
 </Route>

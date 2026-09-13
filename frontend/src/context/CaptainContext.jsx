@@ -16,6 +16,9 @@ const CaptainContext = ({ children }) => {
                 const response = await axios.get(
                     `${import.meta.env.VITE_BASE_URL}/captains/profile`,
                     {
+                        headers: {
+                            Authorization: `Bearer ${localStorage.getItem('captain-token')}`
+                        },
                         withCredentials: true
                     }
                 );

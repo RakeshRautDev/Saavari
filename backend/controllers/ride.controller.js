@@ -1,55 +1,43 @@
-import { compare } from 'bcrypt';
-import { confirmRideService, createRide  } from './../services/ride.service.js';
-import { validationResult } from 'express-validator';
-import { getFare,startRideService, endRideService } from "../services/ride.service.js";
-import { getAddressCoordinate, getCaptainsInTheRadius} from '../services/maps.service.js';
-import { sendMessageToSocketId } from '../socket.js';
+import { confirmRideService, createRide, startRideService, endRideService } from "./../services/ride.service.js";
+import { validationResult } from "express-validator";
+import { getFare } from "../services/fare.service.js";
+import { getAddressCoordinate, getCaptainsInTheRadius } from "../services/maps.service.js";
+import { sendMessageToSocketId } from "../socket.js";
+import logger from "../utils/logger.js";
+import { captainModel } from "../models/captain.model.js";
 
-export const createRideController=async(req,res,next)=>{
-    const errors=validationResult(req);
-    if(!errors.isEmpty()){
-        return res.status(400).json({errors:errors.array()});
+export const createRideController = async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
     }
-    const {pickup,destination,vehicleType}=req.body;
-    
+    const { pickup, destination, vehicleType } = req.body;
+
     try {
-        const ride=await createRide({user:req.user._id,pickup,destination,vehicleType});
-        res.status(201).json({ride,message:"Ride created Succesfully"})
+        const ride = await createRide({ user: req.user._id, pickup, destination, vehicleType });
 
-  
-        
+        // Geocode pickup and find captains BEFORE responding so errors still reach next()
+        const pickupCoordinates = await getAddressCoordinate(pickup);
 
-        const pickupCoordinates=await getAddressCoordinate(pickup);
-        console.log("Pickup Coordinates", pickupCoordinates);
-
-        let CaptainRadius = await getCaptainsInTheRadius(pickupCoordinates.lat, pickupCoordinates.lng, 200);
-        console.log(`Captains found within radius: ${CaptainRadius.length}`);
-
-        if (CaptainRadius.length === 0) {
-            console.log("No captains with location found — falling back to all captains with a socketId");
-            const { captainModel } = await import('../models/captain.model.js');
-            CaptainRadius = await captainModel.find({ socketId: { $exists: true, $ne: null } });
-            console.log(`Fallback: found ${CaptainRadius.length} captains with socketId`);
-        }
+        const { findCaptainsForRide } = await import("../services/matching.service.js");
+        const captainsInRadius = await findCaptainsForRide(pickupCoordinates.lat, pickupCoordinates.lng);
 
         const rideData = ride.toObject();
-        console.log(req.user);
-        rideData.user=req.user.fullname;
+        rideData.user = req.user.fullname;
         delete rideData.otp;
 
-        console.log("Sending new-ride to captains:", CaptainRadius.map(c => ({ id: c._id, socketId: c.socketId })));
-        CaptainRadius.forEach((captain) => {
+        captainsInRadius.forEach((captain) => {
             if (captain.socketId) {
-                console.log(`  → Emitting to socketId: ${captain.socketId}`);
                 sendMessageToSocketId(captain.socketId, "new-ride", rideData);
-            } else {
-                console.log(`  ✗ Captain ${captain._id} has no socketId — skipping`);
             }
         });
+
+        // Send response after all async work is done
+        return res.status(201).json({ ride, message: "Ride created successfully" });
     } catch (error) {
-    next(error);
+        next(error);
     }
-}
+};
 
 
 
@@ -82,23 +70,24 @@ export const getFareController = async (req, res) => {
     }
 };
 
-export const confirmRide=async(req,res,next)=>{
-    const errors=validationResult(req);
-    if(!errors.isEmpty){
-        res.status(400).json({errors:errors.array()})
+export const confirmRide = async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
     }
 
-    const {rideId}=req.body;
+    const { rideId } = req.body;
 
     try {
-        const ride=await confirmRideService(rideId,req.captain._id);
-        sendMessageToSocketId(ride.user.socketId,"ride-confirmed",ride);
+        const ride = await confirmRideService(rideId, req.captain._id);
+        sendMessageToSocketId(ride.user.socketId, "ride-confirmed", ride);
        
         return res.status(200).json(ride);
     } catch (error) {
-        next(error)
+        next(error);
     }
-}
+};
+
 export const startRide = async (req, res) => {
     try {
         const { rideId, otp } = req.query;
@@ -164,39 +153,6 @@ export const endRide = async (req, res) => {
     }
 };
 
-
-export const endride = async (req, res) => {
-    try {
-        const errors = validationResult(req);
-
-        if (!errors.isEmpty()) {
-            return res.status(400).json({
-                success: false,
-                errors: errors.array()
-            });
-        }
-
-        const { rideid } = req.body;
-
-        const ride = await endRideService({
-            rideId: rideid,
-            captain: req.captain
-        });
-
-        return res.status(200).json({
-            success: true,
-            message: "Ride ended successfully",
-            ride
-        });
-
-    } catch (error) {
-        return res.status(400).json({
-            success: false,
-            message: error.message
-        });
-    }
-};
-
 export const getUserCurrentRide = async (req, res) => {
     try {
         const { rideModel } = await import('../models/ride.model.js');
@@ -224,5 +180,80 @@ export const getCaptainCurrentRide = async (req, res) => {
         return res.status(200).json(ride);
     } catch (error) {
         return res.status(500).json({ message: "Error fetching current ride" });
+    }
+};
+
+import { getUserRideHistory, getCaptainRideHistory, getCaptainAnalytics } from "../services/ride.service.js";
+
+export const getUserHistoryController = async (req, res) => {
+    try {
+        const history = await getUserRideHistory(req.user._id);
+        return res.status(200).json(history);
+    } catch (error) {
+        return res.status(500).json({ message: "Error fetching user history", error: error.message });
+    }
+};
+
+export const getCaptainHistoryController = async (req, res) => {
+    try {
+        const history = await getCaptainRideHistory(req.captain._id);
+        return res.status(200).json(history);
+    } catch (error) {
+        return res.status(500).json({ message: "Error fetching captain history", error: error.message });
+    }
+};
+
+export const getCaptainAnalyticsController = async (req, res) => {
+    try {
+        const analytics = await getCaptainAnalytics(req.captain._id);
+        return res.status(200).json(analytics);
+    } catch (error) {
+        return res.status(500).json({ message: "Error fetching captain analytics", error: error.message });
+    }
+};
+
+import { rateRideService } from "../services/ride.service.js";
+
+export const rateRideController = async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const { rideId, rating, userType } = req.body;
+        
+        // userType is passed securely from the auth middleware, 
+        // so we derive it from whether req.user or req.captain exists
+        const actualUserType = req.user ? 'user' : 'captain';
+
+        const updatedRide = await rateRideService({ rideId, rating, userType: actualUserType });
+        
+        return res.status(200).json({ success: true, message: "Rated successfully", ride: updatedRide });
+    } catch (error) {
+        return res.status(400).json({ success: false, message: error.message });
+    }
+};
+
+import { cancelRideService } from "../services/ride.service.js";
+
+export const cancelRideController = async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const { rideId } = req.body;
+        
+        const actualUserType = req.user ? 'user' : 'captain';
+        const userId = req.user ? req.user._id : req.captain._id;
+
+        const updatedRide = await cancelRideService({ rideId, userType: actualUserType, userId });
+        
+        return res.status(200).json({ success: true, message: "Ride cancelled successfully", ride: updatedRide });
+    } catch (error) {
+        console.error("Cancel ride error:", error);
+        return res.status(400).json({ success: false, message: error.message });
     }
 };

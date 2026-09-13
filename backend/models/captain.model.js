@@ -36,19 +36,35 @@ const captainSchema = new mongoose.Schema(
             type: String
         },
 
+        avatarUrl: {
+            type: String,
+            default: ""
+        },
+
         status: {
             type: String,
             enum: ["active", "inactive"],
             default: "inactive"
         },
-location: {
-                lat: {
-                    type: Number
-                },
-                lng: {
-                    type: Number
-                }
+        averageRating: {
+            type: Number,
+            default: 5.0
+        },
+        totalRatings: {
+            type: Number,
+            default: 0
+        },
+        location: {
+            type: {
+                type: String,
+                enum: ['Point'],
+                default: 'Point'
             },
+            coordinates: {
+                type: [Number], // [lng, lat]
+                default: [0, 0]
+            }
+        },
         vehicle: {
             color: {
                 type: String,
@@ -80,8 +96,7 @@ location: {
     { timestamps: true }
 );
 
-
-captainSchema.methods.generateAuthToken = function () {
+captainSchema.index({ location: "2dsphere" });captainSchema.methods.generateAuthToken = function () {
     return jwt.sign(
         { _id: this._id },
         process.env.JWT_SECRET,

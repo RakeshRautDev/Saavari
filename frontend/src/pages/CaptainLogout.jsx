@@ -11,6 +11,7 @@ const CaptainLogout = () => {
                 const response = await axios.post(
                     `${import.meta.env.VITE_BASE_URL}/captains/logout`,{},
                     {
+                        headers: { Authorization: `Bearer ${localStorage.getItem('captain-token')}` },
                         withCredentials: true
                     }
                 );

@@ -31,6 +31,18 @@ const userSchema = new mongoose.Schema(
         },
         socketId: {
             type: String,
+        },
+        avatarUrl: {
+            type: String,
+            default: ""
+        },
+        averageRating: {
+            type: Number,
+            default: 5.0
+        },
+        totalRatings: {
+            type: Number,
+            default: 0
         }
     }, { timestamps: true });
 

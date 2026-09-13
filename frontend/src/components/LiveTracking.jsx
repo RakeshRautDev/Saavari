@@ -204,25 +204,14 @@ function ResizeHandler() {
 // =====================================================
 
 function AnimatedRoute({ route, duration = 1200, pathOptions }) {
-
     const map = useMap();
     const layerRef = useRef(null);
     const rafRef = useRef(null);
-    const routeKey = useRef('');
+    const pathOptsStr = JSON.stringify(pathOptions);
 
     useEffect(() => {
-
         if (!route || route.length < 2) return;
 
-        // Only re-animate when the actual route changes, not on
-        // every unrelated re-render
-        const key = route.map(p => p.join(',')).join('|');
-
-        if (key === routeKey.current) return;
-
-        routeKey.current = key;
-
-        // Remove any previous animated layer
         if (layerRef.current) {
             map.removeLayer(layerRef.current);
             layerRef.current = null;
@@ -230,39 +219,33 @@ function AnimatedRoute({ route, duration = 1200, pathOptions }) {
 
         if (rafRef.current) cancelAnimationFrame(rafRef.current);
 
-        const line = L.polyline([route[0]], pathOptions).addTo(map);
+        const opts = JSON.parse(pathOptsStr);
+        const line = L.polyline([route[0]], opts).addTo(map);
         layerRef.current = line;
 
         const startTime = performance.now();
         const totalPoints = route.length;
 
         function step(now) {
-
             const t = Math.min((now - startTime) / duration, 1);
             const pointCount = Math.max(2, Math.round(t * totalPoints));
-
             line.setLatLngs(route.slice(0, pointCount));
-
             if (t < 1) {
                 rafRef.current = requestAnimationFrame(step);
             }
-
         }
 
         rafRef.current = requestAnimationFrame(step);
 
         return () => {
-
             if (rafRef.current) cancelAnimationFrame(rafRef.current);
-
             if (layerRef.current) {
                 map.removeLayer(layerRef.current);
                 layerRef.current = null;
             }
-
         };
 
-    }, [route, duration, map, pathOptions]);
+    }, [route, duration, map, pathOptsStr]);
 
     return null;
 }
@@ -342,15 +325,29 @@ function AnimatedMarker({ position, icon, duration = 900, children }) {
 // =====================================================
 
 function LiveTracking({
-    location,
-    captainLocation = null,
-    pickupLocation = null,
-    destinationLocation = null,
+    location: rawLocation,
+    captainLocation: rawCaptainLocation = null,
+    pickupLocation: rawPickupLocation = null,
+    destinationLocation: rawDestinationLocation = null,
     route = [],
-    mapCenter = null,
+    mapCenter: rawMapCenter = null,
     fitRoute = false,
     etaText = null
 }) {
+
+    // Helper to ensure coordinates are [lat, lng] arrays
+    const toCoordArray = (coord) => {
+        if (!coord) return null;
+        if (Array.isArray(coord)) return coord;
+        if (coord.lat !== undefined && coord.lng !== undefined) return [coord.lat, coord.lng];
+        return null;
+    };
+
+    const location = useMemo(() => toCoordArray(rawLocation), [rawLocation]);
+    const captainLocation = useMemo(() => toCoordArray(rawCaptainLocation), [rawCaptainLocation]);
+    const pickupLocation = useMemo(() => toCoordArray(rawPickupLocation), [rawPickupLocation]);
+    const destinationLocation = useMemo(() => toCoordArray(rawDestinationLocation), [rawDestinationLocation]);
+    const mapCenter = useMemo(() => toCoordArray(rawMapCenter), [rawMapCenter]);
 
     // ---------------------------------------------
     // Track previous captain location to compute bearing
@@ -400,11 +397,13 @@ function LiveTracking({
     }, [route]);
 
 
+    const initialCenter = location || mapCenter || captainLocation || pickupLocation;
+
     // ---------------------------------------------
-    // Don't create map until initial location exists
+    // Don't create map until we have at least SOME coordinate to center on
     // ---------------------------------------------
 
-    if (!location) {
+    if (!initialCenter) {
 
         return (
             <div
@@ -416,7 +415,7 @@ function LiveTracking({
                     justifyContent: 'center'
                 }}
             >
-                Getting your location...
+                Getting location...
             </div>
         );
 
@@ -494,7 +493,7 @@ function LiveTracking({
 
             <MapContainer
 
-                center={location}
+                center={initialCenter}
 
                 zoom={15}
 

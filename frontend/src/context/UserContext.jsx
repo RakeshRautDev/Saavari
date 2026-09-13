@@ -16,6 +16,9 @@ const UserContext = ({ children }) => {
                 const response = await axios.get(
                     `${import.meta.env.VITE_BASE_URL}/users/profile`,
                     {
+                        headers: {
+                            Authorization: `Bearer ${localStorage.getItem('user-token')}`
+                        },
                         withCredentials: true
                     }
                 )

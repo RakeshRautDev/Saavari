@@ -4,7 +4,8 @@ export const createUser = async ({
     firstname,
     lastname,
     email,
-    password
+    password,
+    avatarUrl
 }) => {
 
     console.log("createUser service called");
@@ -31,7 +32,8 @@ export const createUser = async ({
             lastname
         },
         email,
-        password: hashedPassword
+        password: hashedPassword,
+        avatarUrl: avatarUrl || ""
     });
 
     console.log("User created successfully");
