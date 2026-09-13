@@ -10,7 +10,6 @@ const checkpointerSchema = new mongoose.Schema({
     metadata: { type: mongoose.Schema.Types.Mixed }
 }, { timestamps: true });
 
-// A very basic MongoDB Saver for LangGraph StateGraph memory
 export const CheckpointModel = mongoose.model("Checkpoints", checkpointerSchema);
 
 export class MongoDBSaver {
@@ -47,7 +46,6 @@ export class MongoDBSaver {
     }
     
     async putWrites(config, writes, taskId) {
-        // Simple mock implementation for putWrites
         return;
     }
     

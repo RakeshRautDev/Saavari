@@ -3,7 +3,7 @@ import logger from "../utils/logger.js";
 
 const redis = new Redis(process.env.REDIS_URL || "redis://127.0.0.1:6379", {
     retryStrategy(times) {
-        // Suppress massive connection errors, just try again quietly every 5s
+   
         const delay = Math.min(times * 1000, 5000);
         return delay;
     },
